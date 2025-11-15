@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MINT PUBLIC OS</title>
+  <title>MINT PUBLIC OS | MULTI-CHAIN</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: linear-gradient(135deg,#0f172a,#0ea5a4); color:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align: center; }
@@ -11,7 +11,39 @@
     h2 { margin: 0 0 16px 0; font-size: 24px; text-align: center; background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: rainbow 6s linear infinite; }
     @keyframes rainbow { to { background-position: 600vw; } }
     label{ font-size: 11px; opacity: 0.95; display: block; margin-bottom: 6px; text-align: left; text-transform: uppercase; font-weight: bold; }
-    input[type="password"], input[type="number"], input[type="text"]{ width:100%; padding:9px 10px; margin:0 0 12px 0; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:#fff; font-size:14px; box-sizing:border-box; font-family: Arial, sans-serif; }
+    
+    /* Styling input dan select */
+    input[type="password"], input[type="number"], input[type="text"], select{ 
+        width:100%; 
+        padding:9px 10px; 
+        margin:0 0 12px 0; 
+        border-radius:8px; 
+        border:1px solid rgba(255,255,255,0.15); 
+        background:rgba(255,255,255,0.05); 
+        color:#fff; 
+        font-size:14px; 
+        box-sizing:border-box; 
+        font-family: Arial, sans-serif; 
+    }
+    
+    /* Styling khusus untuk dropdown (select) agar warnanya gelap */
+    select { 
+        appearance: none; 
+        -webkit-appearance: none; 
+        -moz-appearance: none; 
+        background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%20176.7c-4.3%204.3-10%206.3-15.7%206.3s-11.4-2-15.7-6.3L146.2%2089.4%2036.7%20176.7c-4.3%204.3-10%206.3-15.7%206.3s-11.4-2-15.7-6.3c-8.5-8.5-8.5-22.3%200-30.8l130.4-130.4c8.5-8.5%2022.3-8.5%2030.8%200l130.4%20130.4c8.5%208.5%208.5%2022.3%200%2030.8z%22%2F%3E%3C%2Fsvg%3E'); 
+        background-repeat: no-repeat; 
+        background-position: right 10px top 50%; 
+        background-size: 10px; 
+        padding-right: 30px; 
+    }
+    
+    /* Pastikan option di dalam select juga memiliki background gelap */
+    select option {
+        background-color: #0f172a; /* Warna background gelap */
+        color: #fff; /* Warna teks putih */
+    }
+
     input::placeholder { font-size: 14px; text-transform: none; }
     .row { display:flex; gap:8px; margin-bottom:8px; }
     .row > * { flex:1; }
@@ -23,9 +55,10 @@
     #mint { background:linear-gradient(90deg,#7c3aed,#06b6d4); color:#fff; }
     #stop { background:#ff4444; color:#fff; }
     #log { margin-top:14px; height:260px; overflow:auto; background:rgba(0,0,0,0.36); padding:10px; border-radius:8px; font-family: Arial, sans-serif; font-size:13px; color:#e6fffb; text-align: left; }
-    .log-success { color: #00ff88; font-weight:700; }
+    .log-success { color: #00ff88; }
     .log-error { color: #ffaaaa; }
     .log-info { color: #c2f3ff; }
+    .log-warn { color: #ffeb3b; }
     a.tx-link { color:#80ffea; text-decoration:none; }
     a.tx-link:hover { text-decoration:underline; }
     button[disabled] { opacity:0.6; cursor:not-allowed; }
@@ -34,13 +67,19 @@
 </head>
 <body>
   <div class="wrap">
-    <h2>MINT PUBLIC OS</h2>
+    <h2>MINT PUBLIC OS | MULTI-CHAIN</h2>
 
     <label for="pk">Privatekey</label>
     <input id="pk" type="password" placeholder="0x..." />
 
     <label for="nftContractInput">Kontrak NFT</label>
     <input id="nftContractInput" type="text" placeholder="0x..." />
+    
+    <label for="networkSelect">Jaringan</label>
+    <select id="networkSelect">
+      <option value="apechain">Apechain</option>
+      <option value="base">Base</option>
+    </select>
     
     <div class="row">
       <div>
@@ -79,41 +118,60 @@
       const ethersLib = window.ethers;
       if (!ethersLib) { alert("ethers.js gagal dimuat."); return; }
 
-      // Konfigurasi default
-      const RPC_URL = "https://rpc.apechain.com/http";
-      const DEFAULT_CLONE_COUNT = 100;
-      const GAS_BUFFER_PERCENT = 10;
-      const APESCAN_TX_PREFIX = "https://apescan.io/tx/";
-
-      // Kontrak
-      const FACTORY_ADDR = "0x246fD3c3Fc51dD0e6F11FB873Fd5D07Ff03a376A";
+      // --- Konfigurasi Multi-Chain ---
       const MINT_HELPER = "0x00005EA00Ac477B1030CE78506496e8C2dE24bf5";
-      const FEE_RECIPIENT = "0x0000a26b00c1F0DF003000390027140000fAa719";
-
-      const factoryAbi = [
+      const FACTORY_ABI = [
         "function createAndMintBatch(address mintHelper,address nftContract,address feeRecipient,address mainWallet,uint256 amount,uint256 count) payable returns (bool)"
       ];
+      const GAS_BUFFER_PERCENT = 10;
+      const AMOUNT_TO_MINT = 1;
+      const DEFAULT_CLONE_COUNT = 100;
+      
+      const CONFIG = {
+        apechain: {
+          name: "Apechain",
+          rpcUrl: "https://rpc.apechain.com/http",
+          factoryAddr: "0x246fD3c3Fc51dD0e6F11FB873Fd5D07Ff03a376A",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://apescan.io/tx/",
+          nativeToken: "APE",
+          // DIUBAH: Menggunakan Legacy (gasPrice) seperti Base
+          useEip1559: false, 
+          feeRecipientFallback: null
+        },
+        base: {
+          name: "Base",
+          rpcUrl: "https://mainnet.base.org/",
+          factoryAddr: "0x4fb4f576eAc4Fc4828F765965E8CE5875ED63809",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://basescan.org/tx/",
+          nativeToken: "ETH",
+          useEip1559: false,
+          feeRecipientFallback: "0x0000000000000000000000000000000000000000"
+        }
+      };
 
       // Elemen UI
       const pkInput = document.getElementById("pk");
       const nftContractInput = document.getElementById("nftContractInput");
+      const networkSelect = document.getElementById("networkSelect"); 
       const delayInput = document.getElementById("delay");
       const maxloopsInput = document.getElementById("maxloops");
       const cloneCountInput = document.getElementById("cloneCountInput");
       const mintBtn = document.getElementById("mint");
       const stopBtn = document.getElementById("stop");
       const logDiv = document.getElementById("log");
-
       const checkBalanceBtn = document.getElementById("checkBalanceBtn");
       const getEstimationBtn = document.getElementById("getEstimationBtn");
       const clearLogBtn = document.getElementById("clearLogBtn");
 
+      let currentConfig = CONFIG[networkSelect.value];
       let provider = null;
       let wallet = null;
-      let factory = null;
       let running = false;
       let loopCount = 0;
       let maxLoops = 0;
+      const iface = new ethersLib.utils.Interface(FACTORY_ABI);
 
       function log(text, cls="log-info") {
         const t = new Date().toLocaleTimeString();
@@ -126,11 +184,22 @@
       function sleep(ms){
         return new Promise(resolve => setTimeout(resolve, ms));
       }
-
-      function clearInitialLog() {
+      
+      function clearLog() {
           logDiv.innerHTML = "";
       }
 
+      // Memperbaiki: Hanya perbarui konfigurasi dan atur ulang provider/wallet
+      function updateConfig(network) {
+          currentConfig = CONFIG[network];
+          // Atur ulang provider dan wallet ke null, agar dibuat ulang di getWalletAndProvider
+          provider = null;
+          wallet = null; 
+          document.querySelector("h2").textContent = `MINT PUBLIC OS`;
+          log(`Jaringan diatur ke ${currentConfig.name}.`, "log-info");
+      }
+
+      // Memperbaiki: Menghilangkan provider._getConnection() yang bermasalah
       function getWalletAndProvider() {
           const pk = pkInput.value.trim();
           const nftContract = nftContractInput.value.trim();
@@ -139,14 +208,15 @@
               log("Private key tidak valid.", "log-error");
               return null;
           }
-          if (!nftContract || !nftContract.startsWith("0x") || nftContract.length !== 42) {
+          if (!nftContract || !ethersLib.utils.isAddress(nftContract)) {
               log("Kontrak NFT tidak valid.", "log-error");
               return null;
           }
 
           try {
+              // Jika provider belum diinisialisasi (atau sudah direset di updateConfig)
               if (!provider) {
-                  provider = new ethersLib.providers.JsonRpcProvider(RPC_URL);
+                  provider = new ethersLib.providers.JsonRpcProvider(currentConfig.rpcUrl);
               }
               wallet = new ethersLib.Wallet(pk, provider);
               return { provider, wallet };
@@ -156,20 +226,23 @@
           }
       }
 
+      // --- FUNGSI CEK BALANCE ---
       async function checkWalletBalance() {
           const context = getWalletAndProvider();
           if (!context) return;
 
           checkBalanceBtn.disabled = true;
-          log("⏳ Memeriksa saldo wallet...", "log-info");
+          log(`Memeriksa saldo wallet di ${currentConfig.name}...`, "log-info");
           
           try {
               const addr = await context.wallet.getAddress();
               const balance = await context.provider.getBalance(addr);
               const formattedBalance = ethersLib.utils.formatEther(balance);
-              log(`✅ Saldo Wallet (${addr}): **${formattedBalance} APE**`, "log-success");
+              log(`${addr}`, "log-success");
+              log(`${formattedBalance} ${currentConfig.nativeToken}`, "log-success");
+
           } catch (error) {
-              log(`❌ Error saat cek saldo: ${error.message || String(error)}`, "log-error");
+              log(`Error saat cek saldo: ${error.message || String(error)}`, "log-error");
           } finally {
               checkBalanceBtn.disabled = false;
           }
@@ -177,28 +250,60 @@
 
       // ----- helper: pilih hanya satu strategi fee (EIP-1559 atau legacy) -----
       async function buildFeeOverrides(providerInstance, addr) {
-        const feeData = await providerInstance.getFeeData();
-        // Prioritaskan EIP-1559 jika tersedia
-        if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
-          return {
-            from: addr,
-            maxFeePerGas: feeData.maxFeePerGas,
-            maxPriorityFeePerGas: feeData.maxPriorityFeePerGas
-          };
+        // Prioritaskan EIP-1559 hanya jika jaringan mengizinkan dan tersedia
+        if (currentConfig.useEip1559) {
+          const feeData = await providerInstance.getFeeData();
+          if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+            return {
+              from: addr,
+              maxFeePerGas: feeData.maxFeePerGas,
+              maxPriorityFeePerGas: feeData.maxPriorityFeePerGas
+            };
+          }
         }
-        // Jika tidak ada EIP-1559, gunakan gasPrice
-        if (feeData && feeData.gasPrice) {
-          return {
-            from: addr,
-            gasPrice: feeData.gasPrice
-          };
-        }
-        // Fallback minta gasPrice
+        
+        // Fallback ke gasPrice (digunakan Base, Apechain, dan jika EIP-1559 tidak tersedia)
         const gp = await providerInstance.getGasPrice();
         return {
           from: addr,
           gasPrice: gp
         };
+      }
+      
+      // --- FUNGSI ESTIMASI DENGAN FALLBACK FEE RECIPIENT ---
+      async function attemptEstimation(provider, mainWalletAddress, NFT_CONTRACT, COUNT, feeRecipientAddress) {
+          try {
+              // Encode data fungsi
+              const params = [MINT_HELPER, NFT_CONTRACT, feeRecipientAddress, mainWalletAddress, AMOUNT_TO_MINT, COUNT];
+              const data = iface.encodeFunctionData("createAndMintBatch", params);
+              
+              let estimateTx = {
+                  from: mainWalletAddress,
+                  to: currentConfig.factoryAddr,
+                  value: ethersLib.BigNumber.from(0),
+                  data: data,
+              };
+              
+              // Coba sertakan EIP-1559 overrides untuk estimasi (hanya jika jaringan mendukung)
+              if (currentConfig.useEip1559) {
+                  const feeData = await provider.getFeeData();
+                  if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+                      estimateTx.maxFeePerGas = feeData.maxFeePerGas;
+                      estimateTx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+                  }
+              }
+              
+              const gasLimit = await provider.estimateGas(estimateTx);
+              const gasPrice = await provider.getGasPrice(); // Ambil gasPrice untuk perhitungan biaya
+              
+              return { 
+                  gasLimit, 
+                  gasPrice, 
+                  selectedFeeRecipient: feeRecipientAddress 
+              };
+          } catch (error) {
+              return { gasLimit: null, gasPrice: null, selectedFeeRecipient: feeRecipientAddress, error };
+          }
       }
 
       // ----- estimasi gas + fee (menggunakan helper) -----
@@ -210,135 +315,144 @@
 
         const NFT_CONTRACT = nftContractInput.value.trim();
         const CLONE_COUNT = Number(cloneCountInput.value) || DEFAULT_CLONE_COUNT;
+        const addr = await context.wallet.getAddress();
+        
+        log(`Estimasi Gas untuk ${CLONE_COUNT} clone di ${currentConfig.name}...`, "log-info");
+        
+        let result = {};
+        
+        // 1. Coba Fee Recipient Default
+        result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
 
-        try {
-            const addr = await context.wallet.getAddress();
-            const factoryStatic = new ethersLib.Contract(FACTORY_ADDR, factoryAbi, context.provider);
-
-            log(`⏳ Estimasi Gas untuk ${CLONE_COUNT} clone...`, "log-info");
-
-            // build overrides yang TIDAK akan mengandung kombinasi gasPrice + EIP-1559
-            const estimateOverrides = await buildFeeOverrides(context.provider, addr);
-
-            // estimateGas (sertakan from dan hanya satu jenis fee)
-            const estimatedGasLimit = await factoryStatic.estimateGas.createAndMintBatch(
-              MINT_HELPER,
-              NFT_CONTRACT,
-              FEE_RECIPIENT,
-              addr,
-              1,
-              CLONE_COUNT,
-              estimateOverrides
-            );
-
-            const gasBuffer = estimatedGasLimit.mul(ethersLib.BigNumber.from(GAS_BUFFER_PERCENT)).div(100);
-            const finalGasLimit = estimatedGasLimit.add(gasBuffer);
-
-            log(`✅ Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
-
-            // Hitung total fee berdasarkan field yang ada di estimateOverrides
-            let perGas;
-            if (estimateOverrides.maxFeePerGas) {
-              perGas = estimateOverrides.maxFeePerGas;
-              log(`✅ Menggunakan EIP-1559 (maxFeePerGas=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei)`, "log-info");
-            } else {
-              perGas = estimateOverrides.gasPrice;
-              log(`✅ Menggunakan gasPrice=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei`, "log-info");
-            }
-
-            const totalFeeWei = finalGasLimit.mul(perGas);
-            const totalFeeEth = ethersLib.utils.formatEther(totalFeeWei);
-            log(` 💰 PERKIRAAN TOTAL APE YANG DIBUTUHKAN (MAX)`, "log-info");
-            log(` ${totalFeeEth} APE `, "log-success");
-
-        } catch (error) {
-            log(`❌ Error saat estimasi: ${error.message || String(error)}`, "log-error");
-            console.error("Estimation error", error);
-        } finally {
-            getEstimationBtn.disabled = false;
+        // 2. Jika gagal dan ada Fee Recipient Fallback
+        if (!result.gasLimit && currentConfig.feeRecipientFallback) {
+            log(`\nGagal estimasi default. Mencoba fallback FEE_RECIPIENT: ${currentConfig.feeRecipientFallback}`, "log-warn");
+            result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipientFallback);
         }
+
+        if (!result.gasLimit) {
+            log(`GAGAL ESTIMASI TOTAL`, "log-error");
+            log(`Silahkan cek kontrak NFT & Jaringan!.`, "log-error");
+            getEstimationBtn.disabled = false;
+            return;
+        }
+
+        const estimatedGasLimit = result.gasLimit;
+        const gasBuffer = estimatedGasLimit.mul(ethersLib.BigNumber.from(GAS_BUFFER_PERCENT)).div(100);
+        const finalGasLimit = estimatedGasLimit.add(gasBuffer);
+        
+        // Dapatkan data fee untuk perhitungan biaya (EIP-1559 atau Legacy)
+        const feeOverrides = await buildFeeOverrides(context.provider, addr);
+        let perGas;
+        let feeType;
+
+        if (feeOverrides.maxFeePerGas) {
+            perGas = feeOverrides.maxFeePerGas;
+            feeType = `EIP-1559 (maxFeePerGas=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei)`;
+        } else {
+            perGas = feeOverrides.gasPrice;
+            feeType = `Legacy gasPrice=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei`;
+        }
+        
+        const totalFeeWei = finalGasLimit.mul(perGas);
+        const totalFeeEth = ethersLib.utils.formatEther(totalFeeWei);
+        
+        log(`Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
+        log(`Menggunakan ${feeType}`, "log-info");
+        //log(`FEE_RECIPIENT yang berhasil: ${result.selectedFeeRecipient}`, "log-info");
+        log(`PERKIRAAN TOTAL ${currentConfig.nativeToken} YANG DIBUTUHKAN (MAX)`, "log-info");
+        log(`${totalFeeEth} ${currentConfig.nativeToken} `, "log-success");
+
+        getEstimationBtn.disabled = false;
       }
 
-      // ----- loop utama: gunakan helper untuk estimate + tx overrides -----
+      // --- FUNGSI UTAMA LOOPING ---
       async function doLoop() {
         const NFT_CONTRACT = nftContractInput.value.trim();
         const CLONE_COUNT = Number(cloneCountInput.value) || DEFAULT_CLONE_COUNT;
 
         try {
-          if (!NFT_CONTRACT || !NFT_CONTRACT.startsWith("0x") || NFT_CONTRACT.length !== 42) throw new Error("Kontrak NFT tidak valid.");
+          if (!NFT_CONTRACT || !ethersLib.utils.isAddress(NFT_CONTRACT)) throw new Error("Kontrak NFT tidak valid.");
           if (CLONE_COUNT <= 0) throw new Error("Konfigurasi Clone Count tidak valid.");
 
           const addr = await wallet.getAddress();
-          factory = new ethersLib.Contract(FACTORY_ADDR, factoryAbi, wallet);
-          const factoryStatic = new ethersLib.Contract(FACTORY_ADDR, factoryAbi, provider);
 
-          log(`🔁 Loop mint dimulai... (Max loop: ${maxLoops === 0 ? "tak terbatas" : maxLoops})`, "log-info");
-          log(`Konfigurasi: Kontrak NFT=${NFT_CONTRACT} | CloneCount=${CLONE_COUNT}`, "log-info");
+          log(`Loop mint dimulai di ${currentConfig.name}... `, "log-info");
+          log(`Max loop: ${maxLoops === 0 ? "tak terbatas" : maxLoops}`, "log-info");
+          //log(`Konfigurasi: Kontrak NFT=${NFT_CONTRACT} | CloneCount=${CLONE_COUNT}`, "log-info");
           loopCount = 0;
 
           while (running) {
             if (maxLoops > 0 && loopCount >= maxLoops) {
-              log(`ℹ️ Mencapai Max Loop (${maxLoops}). Menghentikan loop.`, "log-info");
+              log(`Mencapai Max Loop (${maxLoops}). Menghentikan loop.`, "log-info");
               break;
             }
 
             loopCount++;
-            log(`⛏️ [#${loopCount}] Minting ${CLONE_COUNT} clone...`, "log-info");
+            log(`[#${loopCount}] Minting ${CLONE_COUNT} clone...`, "log-info");
 
             try {
-                // Ambil override fee yang valid (hanya EIP-1559 atau legacy)
-                const baseFeeOverrides = await buildFeeOverrides(provider, addr);
+                // --- 1. Estimasi Gas dengan Fallback FEE_RECIPIENT (jika ada) ---
+                let result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
+                let selectedFeeRecipient = currentConfig.feeRecipient;
 
-                // Estimate gas menggunakan override yang aman
-                const estimatedGasLimit = await factoryStatic.estimateGas.createAndMintBatch(
-                    MINT_HELPER,
-                    NFT_CONTRACT,
-                    FEE_RECIPIENT,
-                    addr,
-                    1,
-                    CLONE_COUNT,
-                    baseFeeOverrides
-                );
+                if (!result.gasLimit && currentConfig.feeRecipientFallback) {
+                    log(`\nGagal estimasi default. Mencoba fallback FEE_RECIPIENT: ${currentConfig.feeRecipientFallback}`, "log-warn");
+                    result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipientFallback);
+                    if (result.gasLimit) {
+                        selectedFeeRecipient = currentConfig.feeRecipientFallback;
+                    }
+                }
 
+                if (!result.gasLimit) {
+                    log("GAGAL ESTIMASI TOTAL. Melewati loop ini.", "log-error");
+                    await sleep(1000); // Tunggu sebentar sebelum coba lagi
+                    continue; 
+                }
+
+                // --- 2. Tambahkan Buffer dan Dapatkan Fee Overrides ---
+                const estimatedGasLimit = result.gasLimit;
                 const gasBuffer = estimatedGasLimit.mul(ethersLib.BigNumber.from(GAS_BUFFER_PERCENT)).div(100);
                 const finalGasLimit = estimatedGasLimit.add(gasBuffer);
-                log(`✅ Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
 
-                // Susun txOverrides: selalu sertakan gasLimit; lalu tambahkan field fee yang sesuai (tanpa duplikasi)
-                const txOverrides = { value: 0, gasLimit: finalGasLimit };
+                // Ambil override fee yang valid (hanya EIP-1559 atau legacy gasPrice)
+                const baseFeeOverrides = await buildFeeOverrides(provider, addr);
+
+                // Susun txOverrides
+                const txOverrides = { 
+                    value: 0, 
+                    gasLimit: finalGasLimit 
+                };
                 if (baseFeeOverrides.maxFeePerGas && baseFeeOverrides.maxPriorityFeePerGas) {
                   txOverrides.maxFeePerGas = baseFeeOverrides.maxFeePerGas;
                   txOverrides.maxPriorityFeePerGas = baseFeeOverrides.maxPriorityFeePerGas;
                 } else if (baseFeeOverrides.gasPrice) {
                   txOverrides.gasPrice = baseFeeOverrides.gasPrice;
                 }
+                
+                log(`Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
 
-                // Kirim transaksi
-                const tx = await factory.createAndMintBatch(
-                  MINT_HELPER,
-                  NFT_CONTRACT,
-                  FEE_RECIPIENT,
-                  addr,
-                  1,
-                  CLONE_COUNT,
-                  txOverrides
-                );
+                // --- 3. Kirim Transaksi ---
+                const factory = new ethersLib.Contract(currentConfig.factoryAddr, FACTORY_ABI, wallet);
+                const params = [MINT_HELPER, NFT_CONTRACT, selectedFeeRecipient, addr, AMOUNT_TO_MINT, CLONE_COUNT];
+
+                const tx = await factory.createAndMintBatch(...params, txOverrides);
 
                 const txHash = tx.hash;
-                const txLink = APESCAN_TX_PREFIX + txHash;
-                log(`Tx dikirim: <a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">${txHash}</a>`, "log-info");
+                const txLink = currentConfig.explorerPrefix + txHash;
+                //log(`Tx dikirim: <a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">${txHash}</a>`, "log-info");
 
                 const receipt = await tx.wait();
 
                 if (receipt && receipt.status === 1) {
-                  log(`✅ SUKSES — Block ${receipt.blockNumber} (<a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">lihat</a>)`, "log-success");
+                  log(`SUKSES — Block ${receipt.blockNumber} (<a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">lihat</a>)`, "log-success");
                 } else {
-                  log(`⚠️ Transaksi selesai tapi gagal / status != 1 (status=${receipt && receipt.status}) — <a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">lihat</a>`, "log-error");
+                  log(`Transaksi selesai tapi gagal / status != 1 (status=${receipt && receipt.status}) — <a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">lihat</a>`, "log-error");
                 }
 
             } catch (txErr) {
               const message = txErr && txErr.message ? txErr.message : String(txErr);
-              log(`❌ Error saat minting/estimasi Gas: ${message}`, "log-error");
+              log(`Error saat minting/pengiriman Tx: ${message}`, "log-error");
               console.error(txErr);
             }
 
@@ -363,7 +477,7 @@
           running = false;
           mintBtn.disabled = false;
           stopBtn.disabled = true;
-          log("🛑 Loop berhenti.", "log-info");
+          log("Loop berhenti.", "log-info");
         } catch (err) {
           running = false;
           mintBtn.disabled = false;
@@ -389,11 +503,9 @@
         if (maxLoops < 0) maxLoops = 0;
 
         try {
-          provider = context.provider;
-          wallet = context.wallet;
-
+          
           const addr = await wallet.getAddress();
-          log("✅ Wallet siap: " + addr, "log-info");
+          log("Wallet siap: " + addr, "log-info");
           running = true;
           mintBtn.disabled = true;
           stopBtn.disabled = false;
@@ -409,16 +521,23 @@
       stopBtn.addEventListener("click", () => {
         if (!running) { log("Tidak ada loop yang berjalan.", "log-error"); return; }
         running = false;
-        log("⏹️ Stop ditekan. Loop akan berhenti setelah transaksi aktif selesai.", "log-info");
+        log("Stop ditekan", "log-info");
       });
       
       checkBalanceBtn.addEventListener("click", checkWalletBalance);
       getEstimationBtn.addEventListener("click", estimateGasAndFee);
-      clearLogBtn.addEventListener("click", () => { clearInitialLog(); log("Log berhasil dibersihkan.", "log-info"); });
+      clearLogBtn.addEventListener("click", () => { clearLog(); log("Log berhasil dibersihkan.", "log-info"); });
+      
+      // Event listener untuk dropdown jaringan
+      networkSelect.addEventListener("change", (e) => {
+          updateConfig(e.target.value);
+      });
+
 
       // --- INITIALIZATION ---
       stopBtn.disabled = true;
-      clearInitialLog(); 
+      clearLog(); 
+      updateConfig(networkSelect.value); // Set konfigurasi awal dan reset provider/wallet
     })();
   </script>
 </body>
