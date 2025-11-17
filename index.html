@@ -137,7 +137,7 @@
           nativeToken: "APE",
           // DIUBAH: Menggunakan Legacy (gasPrice) seperti Base
           useEip1559: false, 
-          feeRecipientFallback: null
+          // feeRecipientFallback dihapus
         },
         base: {
           name: "Base",
@@ -147,7 +147,7 @@
           explorerPrefix: "https://basescan.org/tx/",
           nativeToken: "ETH",
           useEip1559: false,
-          feeRecipientFallback: "0x0000000000000000000000000000000000000000"
+          // feeRecipientFallback dihapus
         }
       };
 
@@ -189,7 +189,6 @@
           logDiv.innerHTML = "";
       }
 
-      // Memperbaiki: Hanya perbarui konfigurasi dan atur ulang provider/wallet
       function updateConfig(network) {
           currentConfig = CONFIG[network];
           // Atur ulang provider dan wallet ke null, agar dibuat ulang di getWalletAndProvider
@@ -199,7 +198,6 @@
           log(`Jaringan diatur ke ${currentConfig.name}.`, "log-info");
       }
 
-      // Memperbaiki: Menghilangkan provider._getConnection() yang bermasalah
       function getWalletAndProvider() {
           const pk = pkInput.value.trim();
           const nftContract = nftContractInput.value.trim();
@@ -270,7 +268,7 @@
         };
       }
       
-      // --- FUNGSI ESTIMASI DENGAN FALLBACK FEE RECIPIENT ---
+      // --- FUNGSI ESTIMASI TANPA FALLBACK ---
       async function attemptEstimation(provider, mainWalletAddress, NFT_CONTRACT, COUNT, feeRecipientAddress) {
           try {
               // Encode data fungsi
@@ -306,7 +304,7 @@
           }
       }
 
-      // ----- estimasi gas + fee (menggunakan helper) -----
+      // ----- estimasi gas + fee (tanpa fallback) -----
       async function estimateGasAndFee() {
         const context = getWalletAndProvider();
         if (!context) return;
@@ -319,16 +317,8 @@
         
         log(`Estimasi Gas untuk ${CLONE_COUNT} clone di ${currentConfig.name}...`, "log-info");
         
-        let result = {};
-        
-        // 1. Coba Fee Recipient Default
-        result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
-
-        // 2. Jika gagal dan ada Fee Recipient Fallback
-        if (!result.gasLimit && currentConfig.feeRecipientFallback) {
-            log(`\nGagal estimasi default. Mencoba fallback FEE_RECIPIENT: ${currentConfig.feeRecipientFallback}`, "log-warn");
-            result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipientFallback);
-        }
+        // Hanya coba Fee Recipient Default
+        let result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
 
         if (!result.gasLimit) {
             log(`GAGAL ESTIMASI TOTAL`, "log-error");
@@ -359,7 +349,7 @@
         
         log(`Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
         log(`Menggunakan ${feeType}`, "log-info");
-        //log(`FEE_RECIPIENT yang berhasil: ${result.selectedFeeRecipient}`, "log-info");
+        // log(`FEE_RECIPIENT yang digunakan: ${result.selectedFeeRecipient}`, "log-info"); // Hanya log yang default
         log(`PERKIRAAN TOTAL ${currentConfig.nativeToken} YANG DIBUTUHKAN (MAX)`, "log-info");
         log(`${totalFeeEth} ${currentConfig.nativeToken} `, "log-success");
 
@@ -379,7 +369,6 @@
 
           log(`Loop mint dimulai di ${currentConfig.name}... `, "log-info");
           log(`Max loop: ${maxLoops === 0 ? "tak terbatas" : maxLoops}`, "log-info");
-          //log(`Konfigurasi: Kontrak NFT=${NFT_CONTRACT} | CloneCount=${CLONE_COUNT}`, "log-info");
           loopCount = 0;
 
           while (running) {
@@ -392,17 +381,9 @@
             log(`[#${loopCount}] Minting ${CLONE_COUNT} clone...`, "log-info");
 
             try {
-                // --- 1. Estimasi Gas dengan Fallback FEE_RECIPIENT (jika ada) ---
-                let result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
+                // --- 1. Estimasi Gas hanya dengan FEE_RECIPIENT Default ---
                 let selectedFeeRecipient = currentConfig.feeRecipient;
-
-                if (!result.gasLimit && currentConfig.feeRecipientFallback) {
-                    log(`\nGagal estimasi default. Mencoba fallback FEE_RECIPIENT: ${currentConfig.feeRecipientFallback}`, "log-warn");
-                    result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipientFallback);
-                    if (result.gasLimit) {
-                        selectedFeeRecipient = currentConfig.feeRecipientFallback;
-                    }
-                }
+                let result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, selectedFeeRecipient);
 
                 if (!result.gasLimit) {
                     log("GAGAL ESTIMASI TOTAL. Melewati loop ini.", "log-error");
@@ -440,7 +421,6 @@
 
                 const txHash = tx.hash;
                 const txLink = currentConfig.explorerPrefix + txHash;
-                //log(`Tx dikirim: <a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">${txHash}</a>`, "log-info");
 
                 const receipt = await tx.wait();
 
