@@ -387,7 +387,7 @@
                 let result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, selectedFeeRecipient);
 
                 if (!result.gasLimit) {
-                    log("GAGAL ESTIMASI TOTAL. Melewati loop ini.", "log-error");
+                    log("Gagal memeriksa Estimasi...", "log-error");
                     await sleep(1000); // Tunggu sebentar sebelum coba lagi
                     continue; 
                 }
