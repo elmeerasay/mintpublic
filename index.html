@@ -321,8 +321,8 @@
         let result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
 
         if (!result.gasLimit) {
-            log(`GAGAL ESTIMASI TOTAL`, "log-error");
-            // log(`Silahkan cek kontrak NFT & Jaringan!.`, "log-error");
+            log(`Gagal memeriksa Estimasi...`, "log-error");
+            log(`Silahkan gunakan https://elmeeraseaportv3.vercel.app`);
             getEstimationBtn.disabled = false;
             return;
         }
