@@ -388,7 +388,7 @@
 
                 if (!result.gasLimit) {
                     log("Gagal memeriksa Estimasi...", "log-error");
-                    await sleep(1000); // Tunggu sebentar sebelum coba lagi
+                    await sleep(0); // Tunggu sebentar sebelum coba lagi
                     continue; 
                 }
 
