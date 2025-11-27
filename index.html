@@ -77,6 +77,7 @@
     
     <label for="networkSelect">Jaringan</label>
     <select id="networkSelect">
+      <option value="monad">Monad</option>
       <option value="apechain">Apechain</option>
       <option value="base">Base</option>
     </select>
@@ -128,6 +129,20 @@
       const DEFAULT_CLONE_COUNT = 100;
       
       const CONFIG = {
+        // --- Jaringan Monad Ditambahkan ---
+        monad: {
+          name: "Monad",
+          rpcUrl: "https://rpc4.monad.xyz",
+          factoryAddr: "0x443323a68F170C3358fA5168bf948a00F0da49c9",
+          // Menggunakan feeRecipient yang sama untuk konsistensi
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719", 
+          // Perlu menyesuaikan explorer dan nativeToken jika Monad Mainnet sudah rilis
+          explorerPrefix: "https://explorer.monad.xyz/tx/", 
+          nativeToken: "MONAD",
+          // Monad menggunakan EIP-1559, tapi untuk konsistensi dengan Base/Apechain yang menggunakan Legacy:
+          useEip1559: false, 
+        },
+        // ---------------------------------
         apechain: {
           name: "Apechain",
           rpcUrl: "https://rpc.apechain.com/http",
@@ -260,7 +275,7 @@
           }
         }
         
-        // Fallback ke gasPrice (digunakan Base, Apechain, dan jika EIP-1559 tidak tersedia)
+        // Fallback ke gasPrice (digunakan Base, Apechain, Monad, dan jika EIP-1559 tidak tersedia)
         const gp = await providerInstance.getGasPrice();
         return {
           from: addr,
