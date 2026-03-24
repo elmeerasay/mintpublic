@@ -3,336 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TempoMail - Temporary Email Generator</title>
+    <title>LiteMail - Temp Email</title>
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --bg: #F3F4F6;
-            --card-bg: #FFFFFF;
-            --text-main: #1F2937;
-            --text-muted: #6B7280;
-            --border: #E5E7EB;
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
             margin: 0;
+            display: flex;
+            justify-content: center;
             padding: 20px;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
         }
 
-        .container {
-            background-color: var(--card-bg);
-            max-width: 800px;
+        .card {
+            background: white;
             width: 100%;
-            padding: 30px;
+            max-width: 600px;
+            padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            height: fit-content;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        h1 {
-            text-align: center;
-            color: var(--primary);
-            margin-top: 0;
-            font-size: 1.8rem;
-        }
+        h2 { margin-top: 0; font-size: 1.5rem; color: #1e293b; text-align: center; }
 
-        .email-section {
-            text-align: center;
-            margin: 30px 0;
-        }
-
-        .email-display-container {
+        .input-group {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
-        .email-display {
-            font-size: 1.4rem;
-            font-weight: 600;
-            color: var(--text-main);
-            background-color: var(--bg);
-            padding: 15px 25px;
-            border-radius: 8px;
+        input {
+            flex: 1;
+            padding: 12px;
             border: 1px solid var(--border);
-            word-break: break-all;
-            min-width: 300px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            width: 100%;
         }
+
+        input:focus { border-color: var(--primary); }
 
         .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 600;
+            padding: 10px 18px;
             border-radius: 8px;
+            border: none;
             cursor: pointer;
-            transition: background-color 0.2s;
-            display: inline-flex;
+            font-weight: 600;
+            transition: 0.2s;
+            display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
         }
 
-        .btn:hover {
-            background-color: var(--primary-hover);
-        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .btn:disabled {
-            background-color: var(--text-muted);
-            cursor: not-allowed;
-        }
-
-        .inbox-section {
-            margin-top: 40px;
-            border-top: 2px solid var(--border);
-            padding-top: 20px;
-        }
+        .actions { display: flex; gap: 8px; margin-bottom: 25px; }
 
         .inbox-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .status-badge {
-            font-size: 0.85rem;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background-color: #DEF7EC;
-            color: #03543F;
-            display: none; /* Hidden by default */
-        }
-
-        .message-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border);
-            border-left: 4px solid var(--primary);
-            border-radius: 8px;
-            padding: 20px;
+            border-bottom: 2px solid var(--bg);
+            padding-bottom: 10px;
             margin-bottom: 15px;
-            transition: transform 0.2s;
         }
 
-        .message-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        #status { font-size: 0.8rem; color: #64748b; }
 
-        .msg-meta {
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-
-        .msg-meta span {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .msg-meta strong {
-            color: var(--text-main);
-        }
-
-        .msg-body {
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #f3f4f6;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 40px 0;
-            font-style: italic;
-        }
-
-        /* Toast notification */
-        #toast {
-            visibility: hidden;
-            min-width: 250px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
+        .msg-card {
+            border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 1;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-            font-size: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            animation: fadeIn 0.3s ease;
         }
 
-        #toast.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        .msg-head { font-weight: bold; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin-bottom: 8px; color: var(--primary); }
+        .msg-body { white-space: pre-wrap; color: #334155; line-height: 1.5; font-family: monospace; background: #f9fafb; padding: 10px; border-radius: 5px; }
+        
+        .empty { text-align: center; color: #94a3b8; padding: 40px 0; font-style: italic; }
+
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #334155; color: white; padding: 8px 20px;
+            border-radius: 20px; font-size: 0.9rem; display: none; z-index: 100;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>TempoMail Generator</h1>
-        
-        <div class="email-section">
-            <p style="color: var(--text-muted);">Alamat email sementara kamu:</p>
-            <div class="email-display-container">
-                <div class="email-display" id="emailAddress">Belum ada email</div>
-                <button class="btn" style="padding: 15px;" onclick="copyEmail()" id="copyBtn" title="Copy Email">📋</button>
-            </div>
-            <button class="btn" id="generateBtn" onclick="generateNewEmail()">
-                🔄 Generate Email Baru
-            </button>
-        </div>
+<div class="card">
+    <h2>Temp Mail</h2>
 
-        <div class="inbox-section">
-            <div class="inbox-header">
-                <h2>Kotak Masuk</h2>
-                <span class="status-badge" id="refreshStatus">Mengecek...</span>
-            </div>
-            
-            <div id="inboxContainer">
-                <div class="empty-state">
-                    Silakan generate email terlebih dahulu.
-                </div>
-            </div>
-        </div>
+    <div class="input-group">
+        <input type="text" id="emailInput" placeholder="Ketik email atau klik Generate...">
+        <button class="btn btn-outline" onclick="copyEmail()" title="Salin Email">📋</button>
     </div>
 
-    <div id="toast">Email disalin ke clipboard!</div>
+    <div class="actions">
+        <button class="btn btn-primary" id="genBtn" onclick="generateNew()" style="flex: 2;">🔄 Generate Baru</button>
+        <button class="btn btn-outline" id="cekBtn" onclick="manualCheck()" style="flex: 1;">📥 Cek Inbox</button>
+    </div>
 
-    <script>
-        let currentEmail = '';
-        let checkInterval = null;
+    <div class="inbox-section">
+        <div class="inbox-header">
+            <strong>Kotak Masuk</strong>
+            <span id="status">Siap</span>
+        </div>
+        <div id="inbox">
+            <div class="empty">Silakan buat email terlebih dahulu.</div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">Disalin!</div>
+
+<script>
+    const API_BASE = 'https://tempomail.vercel.app/api/api';
+    let checkInterval = null;
+
+    async function generateNew() {
+        const btn = document.getElementById('genBtn');
+        const container = document.getElementById('inbox');
         
-        const API_BASE = 'https://tempomail.vercel.app/api/api';
-
-        // Fungsi untuk generate email baru
-        async function generateNewEmail() {
-            const generateBtn = document.getElementById('generateBtn');
-            const emailDisplay = document.getElementById('emailAddress');
-            const inboxContainer = document.getElementById('inboxContainer');
-            
-            generateBtn.disabled = true;
-            generateBtn.innerHTML = '⏳ Sedang membuat...';
-            
-            // Hentikan interval lama jika ada
-            if (checkInterval) clearInterval(checkInterval);
-
-            try {
-                const response = await fetch(`${API_BASE}?action=generate`);
-                const data = await response.json();
-
-                if (data.success && data.result.email) {
-                    currentEmail = data.result.email;
-                    emailDisplay.textContent = currentEmail;
-                    
-                    // Reset inbox display
-                    inboxContainer.innerHTML = '<div class="empty-state">Menunggu pesan masuk... <br><small>(Auto-refresh setiap 2 detik)</small></div>';
-                    document.getElementById('refreshStatus').style.display = 'inline-block';
-                    
-                    // Mulai pengecekan inbox
-                    startInboxCheck();
-                } else {
-                    emailDisplay.textContent = 'Gagal mengambil email';
-                }
-            } catch (error) {
-                console.error('Error generating email:', error);
-                emailDisplay.textContent = 'Terjadi kesalahan koneksi';
-            } finally {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '🔄 Generate Email Baru';
+        // 1. Clear Inbox segera setelah klik
+        container.innerHTML = '<div class="empty">Sedang menyiapkan email baru...</div>';
+        document.getElementById('status').innerText = 'Membuat...';
+        
+        btn.disabled = true;
+        
+        try {
+            const res = await fetch(`${API_BASE}?action=generate`);
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('emailInput').value = data.result.email;
+                // Ganti teks loading di inbox
+                container.innerHTML = '<div class="empty">Menunggu pesan pertama masuk...</div>';
+                startAutoRefresh();
             }
+        } catch (e) { 
+            container.innerHTML = '<div class="empty">Gagal memuat email baru. Coba lagi.</div>';
         }
+        
+        btn.disabled = false;
+    }
 
-        // Fungsi untuk memulai interval pengecekan
-        function startInboxCheck() {
-            checkInbox(); // Cek langsung pertama kali
-            checkInterval = setInterval(checkInbox, 2000); // Cek setiap 2000ms (2 detik)
-        }
+    function manualCheck() {
+        const email = document.getElementById('emailInput').value;
+        if (!email.includes('@')) return alert('Masukkan format email yang benar');
+        
+        const container = document.getElementById('inbox');
+        container.innerHTML = '<div class="empty">Menghubungkan ke inbox...</div>';
+        
+        startAutoRefresh();
+    }
 
-        // Fungsi untuk mengambil data inbox
-        async function checkInbox() {
-            if (!currentEmail) return;
+    function startAutoRefresh() {
+        if (checkInterval) clearInterval(checkInterval);
+        fetchInbox();
+        checkInterval = setInterval(fetchInbox, 4000); // Interval 4 detik agar lebih ringan
+    }
 
-            const refreshStatus = document.getElementById('refreshStatus');
-            refreshStatus.textContent = 'Memuat ulang...';
-            refreshStatus.style.backgroundColor = '#FEF3C7';
-            refreshStatus.style.color = '#92400E';
+    async function fetchInbox() {
+        const email = document.getElementById('emailInput').value;
+        const status = document.getElementById('status');
+        const container = document.getElementById('inbox');
+        if (!email) return;
 
-            try {
-                const response = await fetch(`${API_BASE}?action=inbox&email=${currentEmail}`);
-                const data = await response.json();
-
-                if (data.success && data.result.count > 0) {
-                    renderInbox(data.result.inbox);
-                } else if (data.success && data.result.count === 0) {
-                    // Jika sebelumnya ada pesan tapi sekarang kosong, jangan hapus UI-nya
-                    // atau bisa disesuaikan sesuai kebutuhan
-                }
-            } catch (error) {
-                console.error('Error checking inbox:', error);
-            } finally {
-                setTimeout(() => {
-                    refreshStatus.textContent = 'Aktif (Auto-refresh)';
-                    refreshStatus.style.backgroundColor = '#DEF7EC';
-                    refreshStatus.style.color = '#03543F';
-                }, 500);
-            }
-        }
-
-        // Fungsi untuk merender pesan ke dalam HTML
-        function renderInbox(messages) {
-            const container = document.getElementById('inboxContainer');
-            container.innerHTML = ''; // Kosongkan container
-
-            // Membalikkan array agar email terbaru (jika di akhir) muncul di atas
-            const sortedMessages = messages.reverse();
-
-            sortedMessages.forEach(msg => {
-                const card = document.createElement('div');
-                card.className = 'message-card';
-                card.innerHTML = `
-                    <div class="msg-meta">
-                        <span><strong>Dari:</strong> ${msg.from}</span>
-                        <span><strong>Subjek:</strong> ${msg.subject}</span>
-                        <span><strong>Waktu:</strong> ${msg.time}</span>
+        status.innerText = 'Memperbarui...';
+        
+        try {
+            const res = await fetch(`${API_BASE}?action=inbox&email=${email}`);
+            const data = await res.json();
+            
+            if (data.success && data.result.count > 0) {
+                container.innerHTML = data.result.inbox.reverse().map(msg => `
+                    <div class="msg-card">
+                        <div class="msg-head">
+                            DARI: ${msg.from}<br>
+                            <span style="color:#64748b; font-size:0.8rem">Subjek: ${msg.subject}</span>
+                        </div>
+                        <div class="msg-body">${msg.message}</div>
                     </div>
-                    <div class="msg-body">${msg.message}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
+                `).join('');
+            } else {
+                // Jika tidak ada pesan, biarkan pesan "Menunggu" tetap ada
+                if(container.innerHTML.includes('msg-card')) {
+                    container.innerHTML = '<div class="empty">Menunggu pesan masuk...</div>';
+                }
+            }
+        } catch (e) { status.innerText = 'Error'; }
+        
+        setTimeout(() => { status.innerText = 'Auto-refresh Aktif'; }, 1000);
+    }
 
-        // Fungsi tambahan untuk menyalin email
-        function copyEmail() {
-            if(!currentEmail) return;
-            navigator.clipboard.writeText(currentEmail).then(() => {
-                const toast = document.getElementById("toast");
-                toast.className = "show";
-                setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
-            });
-        }
-    </script>
+    function copyEmail() {
+        const email = document.getElementById('emailInput');
+        if (!email.value) return;
+        navigator.clipboard.writeText(email.value);
+        const t = document.getElementById('toast');
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2000);
+    }
+</script>
+
 </body>
 </html>
