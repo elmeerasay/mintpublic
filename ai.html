@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ultimate AI Hub - Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        :root { --grad-bg: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); --input-bg: rgba(0, 0, 0, 0.3); --text-main: #ffffff; --sidebar-bg: rgba(15, 32, 39, 0.95); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--grad-bg); color: var(--text-main); height: 100dvh; display: flex; justify-content: center; overflow: hidden; }
+        .app-container { width: 100%; max-width: 768px; height: 100%; display: flex; flex-direction: column; position: relative; }
+
+        #menu-btn { position: absolute; top: 15px; left: 15px; z-index: 50; background: rgba(0,0,0,0.3); border: none; border-radius: 8px; padding: 8px; cursor: pointer; backdrop-filter: blur(5px); transition: 0.2s; }
+        #menu-btn:active { transform: scale(0.9); background: rgba(0,0,0,0.5); }
+        #menu-btn svg { width: 24px; height: 24px; fill: white; }
+
+        #sidebar { position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: var(--sidebar-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; box-shadow: 2px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow-y: auto; }
+        #sidebar.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 15px; flex-shrink: 0; }
+        .sidebar-header h2 { font-size: 18px; }
+        #close-sidebar { background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
+        
+        /* Gaya Riwayat Chat */
+        #new-chat-btn { background: transparent; border: 1px dashed rgba(255,255,255,0.4); color: white; padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; flex-shrink: 0; }
+        #new-chat-btn:active { background: rgba(255,255,255,0.1); }
+        #chat-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        .chat-session { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .chat-session.active { background: rgba(14, 165, 233, 0.2); border-color: rgba(14, 165, 233, 0.5); }
+        .chat-session:hover { background: rgba(255,255,255,0.1); }
+        .chat-title { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; margin-right: 10px; color: #e2e8f0; }
+        .chat-delete { background: transparent; border: none; color: #fca5a5; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; }
+        .chat-delete:hover { background: rgba(239, 68, 68, 0.2); }
+
+        /* Gaya Pengaturan API */
+        .api-settings-container { flex-shrink: 0; display: flex; flex-direction: column; gap: 15px; }
+        .setting-group { display: flex; flex-direction: column; gap: 6px; }
+        .setting-group label { font-size: 13px; color: #a5f3fc; font-weight: 600; }
+        .setting-group input, .setting-group select { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; font-size: 14px; outline: none; width: 100%; }
+        .setting-group input:focus, .setting-group select:focus { border-color: #0ea5e9; }
+        .setting-group select option, .setting-group select optgroup { background: #0f2027; color: white; }
+        #save-settings { background: #0ea5e9; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: 0.2s; }
+        #save-settings:active { background: #0284c7; transform: scale(0.98); }
+
+        /* Area Obrolan Utama */
+        #welcome-screen { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; padding: 20px; transition: opacity 0.3s ease; pointer-events: none; }
+        #welcome-screen h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #a5f3fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; padding-top: 60px; display: flex; flex-direction: column; gap: 20px; scrollbar-width: none; scroll-behavior: smooth; }
+        #chat-window::-webkit-scrollbar { display: none; }
+        
+        .msg-wrapper.user { align-self: flex-end; display: flex; align-items: center; gap: 8px; max-width: 95%; }
+        .retry-icon { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); width: 35px; height: 35px; border-radius: 50%; display: none; justify-content: center; align-items: center; cursor: pointer; font-size: 18px; transition: 0.2s; flex-shrink: 0; }
+        .retry-icon:active { transform: scale(0.9) rotate(-45deg); background: rgba(239, 68, 68, 0.4); }
+        .msg.user { padding: 12px 18px; font-size: 15px; line-height: 1.5; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px 20px 4px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); word-wrap: break-word; }
+        
+        .msg.ai { align-self: flex-start; width: 100%; max-width: 100%; padding: 5px 0; font-size: 15px; line-height: 1.6; word-wrap: break-word; }
+        .msg.ai p { margin-bottom: 12px; } .msg.ai h1, .msg.ai h2, .msg.ai h3 { margin-top: 15px; margin-bottom: 8px; font-weight: 600; }
+        .msg.ai ul, .msg.ai ol { margin-left: 20px; margin-bottom: 12px; } .msg.ai a { color: #38bdf8; text-decoration: none; }
+        .error-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px 15px; border-radius: 8px; font-size: 14px; margin-top: 5px; word-break: break-all; }
+
+        .typing { display: flex; gap: 4px; padding: 10px 0; align-items: center; }
+        .dot { width: 6px; height: 6px; background: rgba(255,255,255,0.7); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; } .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        pre { background: #111827; padding: 15px; border-radius: 12px; overflow-x: auto; margin: 10px 0; border: 1px solid rgba(255,255,255,0.05); }
+        code { font-family: "JetBrains Mono", Consolas, Monaco, monospace; font-size: 13px; }
+        .copy-wrapper { position: relative; width: 100%; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.15); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: 0.2s; backdrop-filter: blur(4px); }
+        .copy-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+
+        #input-area { flex-shrink: 0; padding: 15px; background: transparent; display: flex; gap: 10px; align-items: center; z-index: 10; }
+        input#inp { flex: 1; padding: 15px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.15); background: var(--input-bg); color: white; outline: none; font-size: 15px; backdrop-filter: blur(10px); }
+        input#inp:focus { border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.5); }
+        input#inp::placeholder { color: rgba(255,255,255,0.5); }
+        button#btn-send { background: #0ea5e9; width: 50px; height: 50px; flex-shrink: 0; border: none; border-radius: 50%; color: white; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        button#btn-send:active { transform: scale(0.9); background: #0284c7; }
+        button#btn-send svg { width: 22px; height: 22px; fill: white; transform: translateX(2px) translateY(1px); }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        <h2>Menu</h2>
+        <button id="close-sidebar">&times;</button>
+    </div>
+    
+    <button id="new-chat-btn" onclick="createNewSession()">➕ Obrolan Baru</button>
+    <div id="chat-list">
+        </div>
+
+    <div class="api-settings-container">
+        <div style="font-size: 14px; color: #cbd5e1; font-weight: bold; margin-bottom: 5px;">⚙️ Pengaturan API</div>
+        <div class="setting-group">
+            <label>API Key</label>
+            <input type="password" id="set-key" placeholder="Masukkan Key Anda...">
+        </div>
+        
+        <div class="setting-group">
+            <label>Endpoint URL Server</label>
+            <select id="set-url">
+                <optgroup label="Default Providers">
+                    <option value="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions">Google Gemini (OpenAI Format)</option>
+                    <option value="https://api.bluesminds.com/v1/chat/completions">Bluesminds (Multi-Model)</option>
+                    <option value="https://api.anthropic.com/v1/messages">Anthropic (Claude Resmi)</option>
+                    <option value="https://api.openai.com/v1/chat/completions">OpenAI (ChatGPT)</option>
+                    <option value="https://api.groq.com/openai/v1/chat/completions">Groq (Super Fast)</option>
+                    <option value="https://api.deepseek.com/chat/completions">DeepSeek Official</option>
+                </optgroup>
+                <option value="custom_url">➕ Tambah Endpoint Manual...</option>
+            </select>
+        </div>
+
+        <div class="setting-group">
+            <label>Pilih Model AI</label>
+            <select id="set-mod">
+                <optgroup label="Google Gemini (VIP Access)">
+                    <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (Dewa Coding)</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro (Stabil & Cerdas)</option>
+                    <option value="deep-research-pro-preview-12-2025">Deep Research Pro (Arsitek)</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Super Cepat)</option>
+                </optgroup>
+                <optgroup label="Claude (Anthropic)">
+                    <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                    <option value="claude-4-5-sonnet">Claude 4.5 Sonnet</option>
+                </optgroup>
+                <optgroup label="DeepSeek & Qwen">
+                    <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                    <option value="deepseek-ai/deepseek-v3.1">DeepSeek v3.1</option>
+                </optgroup>
+                <option value="custom_mod">➕ Tambah Model Manual...</option>
+            </select>
+        </div>
+        <button id="save-settings">Simpan API & Model</button>
+    </div>
+</div>
+
+<div class="app-container">
+    <button id="menu-btn"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+    <div id="welcome-screen"><h1>Mau tanya apa hari ini?</h1></div>
+    <div id="chat-window"></div>
+    <div id="input-area">
+        <input type="text" id="inp" placeholder="Ketik pesan..." autocomplete="off">
+        <button id="btn-send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
+    </div>
+</div>
+
+<script>
+    // --- State & Penyimpanan ---
+    let API_KEY = localStorage.getItem('user_api_key') || "";
+    let API_URL = localStorage.getItem('user_api_url') || "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+    let API_MOD = localStorage.getItem('user_api_mod') || "gemini-3.1-pro-preview";
+    
+    // Sistem Manajemen Sesi (Chat History)
+    let chatSessions = JSON.parse(localStorage.getItem('chat_sessions')) || [];
+    let currentSessionId = localStorage.getItem('current_session_id') || null;
+
+    // --- Inisialisasi DOM ---
+    const keyInput = document.getElementById('set-key');
+    const urlSelect = document.getElementById('set-url');
+    const modSelect = document.getElementById('set-mod');
+    const chatListDiv = document.getElementById('chat-list');
+    const welcome = document.getElementById('welcome-screen');
+    const chat = document.getElementById('chat-window');
+    const inp = document.getElementById('inp');
+    const btnSend = document.getElementById('btn-send');
+    const sidebar = document.getElementById('sidebar');
+
+    keyInput.value = API_KEY;
+
+    // Load Custom URLs & Models ke Dropdown
+    let customUrls = JSON.parse(localStorage.getItem('custom_endpoints')) || [];
+    let customMods = JSON.parse(localStorage.getItem('custom_models')) || [];
+    customUrls.forEach(url => { let opt = new Option(url, url); urlSelect.insertBefore(opt, urlSelect.lastElementChild); });
+    if(customMods.length > 0) {
+        let optGroup = document.createElement('optgroup'); optGroup.label = "Model Kustom";
+        customMods.forEach(mod => { let opt = new Option(mod, mod); optGroup.appendChild(opt); });
+        modSelect.insertBefore(optGroup, modSelect.lastElementChild);
+    }
+
+    if(Array.from(urlSelect.options).some(opt => opt.value === API_URL)) urlSelect.value = API_URL;
+    if(Array.from(modSelect.options).some(opt => opt.value === API_MOD)) modSelect.value = API_MOD;
+
+    // --- Logika Tambah Manual Endpoint/Model ---
+    urlSelect.addEventListener('change', function() {
+        if (this.value === 'custom_url') {
+            let newUrl = prompt("Masukkan Endpoint URL Kustom:");
+            if (newUrl && newUrl.trim() !== "") {
+                newUrl = newUrl.trim(); customUrls.push(newUrl); localStorage.setItem('custom_endpoints', JSON.stringify(customUrls));
+                let opt = new Option(newUrl, newUrl); urlSelect.insertBefore(opt, urlSelect.lastElementChild); urlSelect.value = newUrl;
+            } else { urlSelect.value = API_URL; }
+        }
+    });
+
+    modSelect.addEventListener('change', function() {
+        if (this.value === 'custom_mod') {
+            let newMod = prompt("Masukkan Nama Model Kustom:");
+            if (newMod && newMod.trim() !== "") {
+                newMod = newMod.trim(); customMods.push(newMod); localStorage.setItem('custom_models', JSON.stringify(customMods));
+                localStorage.setItem('user_api_mod', newMod); location.reload(); 
+            } else { modSelect.value = API_MOD; }
+        }
+    });
+
+    // --- Logika Sidebar & API Settings ---
+    document.getElementById('menu-btn').onclick = () => sidebar.classList.add('open');
+    document.getElementById('close-sidebar').onclick = () => sidebar.classList.remove('open');
+    document.getElementById('save-settings').onclick = () => {
+        API_KEY = keyInput.value.trim(); API_URL = urlSelect.value; API_MOD = modSelect.value;
+        localStorage.setItem('user_api_key', API_KEY); localStorage.setItem('user_api_url', API_URL); localStorage.setItem('user_api_mod', API_MOD);
+        alert("Pengaturan API & Model tersimpan!");
+    };
+
+    // ==========================================
+    // SISTEM MANAJEMEN RIWAYAT OBROLAN (MEMORI)
+    // ==========================================
+
+    function saveSessionsToStorage() {
+        localStorage.setItem('chat_sessions', JSON.stringify(chatSessions));
+        localStorage.setItem('current_session_id', currentSessionId);
+        renderSessionList();
+    }
+
+    function createNewSession() {
+        currentSessionId = Date.now().toString();
+        chatSessions.unshift({ id: currentSessionId, title: "Obrolan Baru", messages: [] });
+        saveSessionsToStorage();
+        loadSession(currentSessionId);
+        if(window.innerWidth <= 768) sidebar.classList.remove('open');
+    }
+
+    function deleteSession(id, event) {
+        event.stopPropagation(); // Mencegah terkliknya sesi saat klik tombol hapus
+        if (confirm("Hapus riwayat obrolan ini?")) {
+            chatSessions = chatSessions.filter(s => s.id !== id);
+            if (chatSessions.length === 0) {
+                createNewSession();
+            } else if (currentSessionId === id) {
+                loadSession(chatSessions[0].id);
+            } else {
+                saveSessionsToStorage();
+            }
+        }
+    }
+
+    function renderSessionList() {
+        chatListDiv.innerHTML = "";
+        chatSessions.forEach(session => {
+            const div = document.createElement('div');
+            div.className = `chat-session ${session.id === currentSessionId ? 'active' : ''}`;
+            div.onclick = () => { loadSession(session.id); if(window.innerWidth <= 768) sidebar.classList.remove('open'); };
+            
+            const title = document.createElement('span');
+            title.className = 'chat-title';
+            title.innerText = session.title;
+            
+            const delBtn = document.createElement('button');
+            delBtn.className = 'chat-delete';
+            delBtn.innerHTML = '🗑️';
+            delBtn.onclick = (e) => deleteSession(session.id, e);
+            
+            div.appendChild(title);
+            div.appendChild(delBtn);
+            chatListDiv.appendChild(div);
+        });
+    }
+
+    function renderMessageHTML(role, content) {
+        const div = document.createElement('div');
+        if (role === 'user') {
+            div.className = 'msg-wrapper user';
+            div.innerHTML = `<div class="msg user">${content}</div>`;
+        } else {
+            div.className = 'msg ai';
+            div.innerHTML = marked.parse(content);
+            div.querySelectorAll('pre').forEach(pre => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'copy-wrapper';
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+                const b = document.createElement('button');
+                b.className = 'copy-btn'; b.innerText = 'Copy';
+                b.onclick = () => { navigator.clipboard.writeText(pre.innerText.replace('Copy', '')); b.innerText = 'Copied!'; setTimeout(() => b.innerText = 'Copy', 2000); };
+                wrapper.appendChild(b);
+            });
+        }
+        return div;
+    }
+
+    function loadSession(id) {
+        currentSessionId = id;
+        chat.innerHTML = "";
+        saveSessionsToStorage();
+
+        const session = chatSessions.find(s => s.id === id);
+        if (!session || session.messages.length === 0) {
+            welcome.style.opacity = '1'; welcome.style.display = 'block';
+        } else {
+            welcome.style.opacity = '0'; welcome.style.display = 'none';
+            session.messages.forEach(msg => {
+                const msgDiv = renderMessageHTML(msg.role, msg.content);
+                chat.appendChild(msgDiv);
+            });
+            hljs.highlightAll();
+            chat.scrollTop = chat.scrollHeight;
+        }
+    }
+
+    // Inisialisasi awal saat halaman dimuat
+    if (chatSessions.length === 0) {
+        createNewSession();
+    } else {
+        if (!currentSessionId || !chatSessions.find(s => s.id === currentSessionId)) {
+            currentSessionId = chatSessions[0].id;
+        }
+        loadSession(currentSessionId);
+    }
+
+    // ==========================================
+    // LOGIKA PENGIRIMAN PESAN & KONEKSI API
+    // ==========================================
+
+    let activeUserWrapper = null; 
+
+    async function typeWriter(text, element) {
+        const rawHtml = marked.parse(text);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = rawHtml;
+        element.innerHTML = "";
+        let content = tempDiv.innerHTML;
+        let i = 0;
+        
+        return new Promise(resolve => {
+            const interval = setInterval(() => {
+                element.innerHTML = content.substring(0, i) + "▋";
+                i += 8; // Kecepatan render
+                if (i >= content.length) {
+                    clearInterval(interval);
+                    element.innerHTML = content;
+                    element.querySelectorAll('pre').forEach(pre => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'copy-wrapper';
+                        pre.parentNode.insertBefore(wrapper, pre);
+                        wrapper.appendChild(pre);
+                        const b = document.createElement('button');
+                        b.className = 'copy-btn'; b.innerText = 'Copy';
+                        b.onclick = () => { navigator.clipboard.writeText(pre.innerText.replace('Copy', '')); b.innerText = 'Copied!'; setTimeout(() => b.innerText = 'Copy', 2000); };
+                        wrapper.appendChild(b);
+                    });
+                    hljs.highlightAll();
+                    chat.scrollTop = chat.scrollHeight;
+                    resolve();
+                }
+                chat.scrollTop = chat.scrollHeight;
+            }, 10);
+        });
+    }
+
+    async function ask(isRetry = false) {
+        if (!API_KEY) { alert("API Key kosong! Silakan isi di Pengaturan (Bilah Samping)."); sidebar.classList.add('open'); return; }
+
+        let txt = "";
+        let session = chatSessions.find(s => s.id === currentSessionId);
+        
+        if (!isRetry) {
+            txt = inp.value.trim();
+            if (!txt) return;
+
+            if (welcome.style.opacity !== '0') { welcome.style.opacity = '0'; setTimeout(() => welcome.style.display = 'none', 300); }
+
+            // Set judul sesi jika ini pesan pertama
+            if (session.messages.length === 0) {
+                session.title = txt.length > 25 ? txt.substring(0, 25) + "..." : txt;
+            }
+
+            activeUserWrapper = document.createElement('div');
+            activeUserWrapper.className = 'msg-wrapper user';
+
+            const retryBtn = document.createElement('div');
+            retryBtn.className = 'retry-icon'; retryBtn.innerHTML = '↻';
+            retryBtn.onclick = () => { 
+                retryBtn.style.display = 'none'; 
+                const nextAiNode = activeUserWrapper.nextElementSibling;
+                if(nextAiNode && nextAiNode.classList.contains('ai')) nextAiNode.remove();
+                ask(true); 
+            };
+
+            const uDiv = document.createElement('div');
+            uDiv.className = 'msg user'; uDiv.innerText = txt;
+
+            activeUserWrapper.appendChild(retryBtn);
+            activeUserWrapper.appendChild(uDiv);
+            chat.appendChild(activeUserWrapper);
+            
+            inp.value = ""; chat.scrollTop = chat.scrollHeight;
+            
+            // Simpan memori user
+            session.messages.push({role: "user", content: txt});
+            saveSessionsToStorage();
+        }
+
+        const aiDiv = document.createElement('div');
+        aiDiv.className = 'msg ai';
+        aiDiv.innerHTML = '<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+        chat.appendChild(aiDiv); chat.scrollTop = chat.scrollHeight;
+
+        try {
+            const isAnthropic = API_URL.includes("api.anthropic.com");
+            let reqHeaders = { 'Content-Type': 'application/json' };
+            let reqBody = {};
+
+            if (isAnthropic) {
+                reqHeaders['x-api-key'] = API_KEY; reqHeaders['anthropic-version'] = '2023-06-01'; reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+                reqBody = { model: API_MOD, max_tokens: 4096, messages: session.messages };
+            } else {
+                reqHeaders['Authorization'] = `Bearer ${API_KEY}`;
+                reqBody = { model: API_MOD, messages: session.messages };
+            }
+
+            const res = await fetch(API_URL, {
+                method: 'POST', headers: reqHeaders, keepalive: true, body: JSON.stringify(reqBody)
+            });
+
+            if (!res.ok) {
+                let errorMsg = `HTTP Error ${res.status}`;
+                try {
+                    const errData = await res.json();
+                    if (errData.error && errData.error.message) errorMsg = errData.error.message;
+                    else if (errData.message) errorMsg = errData.message;
+                } catch(err) {}
+                throw new Error(errorMsg);
+            }
+
+            const data = await res.json();
+            const result = isAnthropic ? data.content[0].text : data.choices[0].message.content;
+            
+            // Simpan memori AI
+            session.messages.push({role: "assistant", content: result});
+            saveSessionsToStorage();
+            
+            await typeWriter(result, aiDiv);
+            
+        } catch (e) {
+            aiDiv.innerHTML = `<div class="error-box"><b>Koneksi Gagal:</b><br>${e.message}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+            if (activeUserWrapper) {
+                const retryIcon = activeUserWrapper.querySelector('.retry-icon');
+                if(retryIcon) retryIcon.style.display = 'flex';
+            }
+        }
+    }
+
+    btnSend.onclick = () => ask(false);
+    inp.onkeypress = (e) => { if(e.key === 'Enter') ask(false); };
+</script>
+</body>
+</html>
