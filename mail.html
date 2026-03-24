@@ -3,129 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temp Mail</title>
+    <title>LiteMail - Smooth</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --bg: #f8fafc;
-            --border: #e2e8f0;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .card {
-            background: white;
-            width: 100%;
-            max-width: 600px;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-
-        h2 { margin-top: 0; font-size: 1.5rem; color: #1e293b; text-align: center; }
-
-        .input-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            outline: none;
-            width: 100%;
-        }
-
-        input:focus { border-color: var(--primary); }
-
-        .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: #f1f5f9; color: #475569; border: 1px solid var(--border); }
-        .btn:hover { opacity: 0.9; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .actions { display: flex; gap: 8px; margin-bottom: 25px; }
-
-        .inbox-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--bg);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
-        #status { font-size: 0.8rem; color: #64748b; }
-
-        .msg-card {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 12px;
-            font-size: 0.9rem;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .msg-head { font-weight: bold; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin-bottom: 8px; color: var(--primary); }
-        .msg-body { white-space: pre-wrap; color: #334155; line-height: 1.5; font-family: monospace; background: #f9fafb; padding: 10px; border-radius: 5px; }
+        :root { --primary: #2563eb; --bg: #f1f5f9; --border: #e2e8f0; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; padding: 15px; }
+        .card { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { margin: 0 0 15px 0; font-size: 1.1rem; text-align: center; color: #334155; text-transform: uppercase; }
         
-        .empty { text-align: center; color: #94a3b8; padding: 40px 0; font-style: italic; }
+        .input-group { display: flex; gap: 5px; margin-bottom: 8px; }
+        input { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; background: #f8fafc; }
+        
+        .actions { display: flex; gap: 6px; margin-bottom: 20px; }
+        .btn { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.85rem; flex: 1; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: #fff; color: #475569; border: 1px solid var(--border); }
 
-        #toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #334155; color: white; padding: 8px 20px;
-            border-radius: 20px; font-size: 0.9rem; display: none; z-index: 100;
+        .inbox-header { border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; font-size: 0.9rem; display: flex; justify-content: space-between; }
+        
+        .msg-card { 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            padding: 12px; 
+            margin-bottom: 10px; 
+            background: #ffffff;
+            animation: fadeIn 0.4s ease;
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .msg-meta { font-size: 0.75rem; margin-bottom: 8px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .msg-body { 
+            font-size: 0.9rem; color: #1e293b; line-height: 1.3; 
+            white-space: normal; background: #f9fafb; padding: 10px; border-radius: 6px;
+        }
+
+        .otp { font-weight: 800; color: #e11d48; background: #fff1f2; padding: 2px 4px; border-radius: 4px; }
+        .empty { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 0.85rem; }
+        #toast { position: fixed; bottom: 20px; background: #1e293b; color: white; padding: 8px 20px; border-radius: 30px; font-size: 0.8rem; display: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>Temp Mail</h2>
-
     <div class="input-group">
-        <input type="text" id="emailInput" placeholder="Ketik email atau klik Generate...">
-        <button class="btn btn-outline" onclick="copyEmail()" title="Salin Email">📋</button>
+        <input type="text" id="emailInput" placeholder="Alamat email...">
+        <button class="btn-outline" style="width:50px; border-radius:8px; cursor:pointer" onclick="copyEmail()">📋</button>
     </div>
-
     <div class="actions">
-        <button class="btn btn-primary" id="genBtn" onclick="generateNew()" style="flex: 2;">🔄 Generate Baru</button>
-        <button class="btn btn-outline" id="cekBtn" onclick="manualCheck()" style="flex: 1;">📥 Cek Inbox</button>
+        <button class="btn btn-primary" id="genBtn" onclick="generateNew()">Generate Baru</button>
+        <button class="btn btn-outline" onclick="manualCheck()">Cek Inbox</button>
     </div>
-
-    <div class="inbox-section">
-        <div class="inbox-header">
-            <strong>Kotak Masuk</strong>
-            <span id="status">Siap</span>
-        </div>
-        <div id="inbox">
-            <div class="empty">Silakan buat email terlebih dahulu.</div>
-        </div>
+    <div class="inbox-header">
+        <span>Kotak Masuk</span>
+        <span id="status" style="font-weight: normal; font-size: 0.7rem; color: #94a3b8;">Standby</span>
     </div>
+    <div id="inbox"><div class="empty">Belum ada email.</div></div>
 </div>
 
 <div id="toast">Disalin!</div>
@@ -133,80 +65,69 @@
 <script>
     const API_BASE = 'https://tempomail.vercel.app/api/api';
     let checkInterval = null;
+    let lastInboxContent = ""; // Untuk deteksi perubahan konten
 
     async function generateNew() {
+        document.getElementById('inbox').innerHTML = '<div class="empty">Menyiapkan...</div>';
+        lastInboxContent = ""; 
         const btn = document.getElementById('genBtn');
-        const container = document.getElementById('inbox');
-        
-        // 1. Clear Inbox segera setelah klik
-        container.innerHTML = '<div class="empty">Sedang menyiapkan email baru...</div>';
-        document.getElementById('status').innerText = 'Membuat...';
-        
         btn.disabled = true;
-        
         try {
             const res = await fetch(`${API_BASE}?action=generate`);
             const data = await res.json();
             if (data.success) {
                 document.getElementById('emailInput').value = data.result.email;
-                // Ganti teks loading di inbox
-                container.innerHTML = '<div class="empty">Menunggu pesan pertama masuk...</div>';
                 startAutoRefresh();
             }
-        } catch (e) { 
-            container.innerHTML = '<div class="empty">Gagal memuat email baru. Coba lagi.</div>';
-        }
-        
+        } catch (e) { }
         btn.disabled = false;
     }
 
     function manualCheck() {
-        const email = document.getElementById('emailInput').value;
-        if (!email.includes('@')) return alert('Masukkan format email yang benar');
-        
-        const container = document.getElementById('inbox');
-        container.innerHTML = '<div class="empty">Menghubungkan ke inbox...</div>';
-        
-        startAutoRefresh();
+        if (document.getElementById('emailInput').value.includes('@')) {
+            lastInboxContent = "";
+            startAutoRefresh();
+        }
     }
 
     function startAutoRefresh() {
         if (checkInterval) clearInterval(checkInterval);
         fetchInbox();
-        checkInterval = setInterval(fetchInbox, 4000); // Interval 4 detik agar lebih ringan
+        checkInterval = setInterval(fetchInbox, 3000);
     }
 
     async function fetchInbox() {
         const email = document.getElementById('emailInput').value;
-        const status = document.getElementById('status');
-        const container = document.getElementById('inbox');
         if (!email) return;
-
-        status.innerText = 'Memperbarui...';
         
         try {
             const res = await fetch(`${API_BASE}?action=inbox&email=${email}`);
             const data = await res.json();
+            const container = document.getElementById('inbox');
             
             if (data.success && data.result.count > 0) {
-                container.innerHTML = data.result.inbox.reverse().map(msg => `
-                    <div class="msg-card">
-                        <div class="msg-head">
-                            DARI: ${msg.from}<br>
-                            <span style="color:#64748b; font-size:0.8rem">Subjek: ${msg.subject}</span>
+                // Bandingkan jumlah pesan atau isi pesan terakhir untuk cegah flicker
+                const currentContent = JSON.stringify(data.result.inbox);
+                if (currentContent === lastInboxContent) return; // Jika sama, stop (anti-flicker)
+                
+                lastInboxContent = currentContent;
+                container.innerHTML = data.result.inbox.reverse().map(msg => {
+                    let body = msg.message.replace(/\s\s+/g, ' ').trim();
+                    body = body.replace(/\b\d{4,7}\b/g, (m) => `<span class="otp">${m}</span>`);
+                    return `
+                        <div class="msg-card">
+                            <div class="msg-meta"><b>DARI:</b> ${msg.from}<br><b>SUBJEK:</b> ${msg.subject}</div>
+                            <div class="msg-body">${body}</div>
                         </div>
-                        <div class="msg-body">${msg.message}</div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
+                document.getElementById('status').innerText = 'Update: ' + new Date().toLocaleTimeString();
             } else {
-                // Jika tidak ada pesan, biarkan pesan "Menunggu" tetap ada
-                if(container.innerHTML.includes('msg-card')) {
-                    container.innerHTML = '<div class="empty">Menunggu pesan masuk...</div>';
+                if (container.innerHTML === "" || container.querySelector('.msg-card') === null) {
+                    container.innerHTML = '<div class="empty">Menunggu pesan...</div>';
                 }
             }
-        } catch (e) { status.innerText = 'Error'; }
-        
-        setTimeout(() => { status.innerText = 'Auto-refresh Aktif'; }, 1000);
+        } catch (e) { }
     }
 
     function copyEmail() {
@@ -218,6 +139,5 @@
         setTimeout(() => { t.style.display = 'none'; }, 2000);
     }
 </script>
-
 </body>
 </html>
