@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Factory Dashboard Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
+    <style>
+        /* Desain Scrollbar Terminal */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        
+        .terminal-font { font-family: 'Fira Code', 'Courier New', monospace; }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .loading-pulse { animation: pulse-soft 2s infinite; }
+        .panel-container { display: flex; flex-direction: column; gap: 1.5rem; height: 100%; }
+        input[type="radio"] { accent-color: #3b82f6; width: 16px; height: 16px; }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-gray-100 min-h-screen p-4 md:p-8 terminal-font">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <div class="bg-gray-800 p-8 rounded-2xl border border-gray-700 shadow-2xl flex flex-col items-center justify-center text-center relative">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-wide">
+                Factory Manager Pro
+            </h1>
+            <p class="text-gray-400 text-sm mt-2 font-mono">Automated Deployment & Batch Minting System</p>
+            
+            <div id="walletDisplay" class="hidden mt-4 flex flex-col items-center bg-gray-900/50 px-6 py-2 rounded-xl border border-gray-700">
+                <span id="userAddr" class="text-blue-400 text-xs font-mono bg-blue-900/30 px-3 py-1 rounded-full border border-blue-800/50 mb-1">0x...</span>
+                <span id="userBalance" class="text-xl font-bold text-white">0 ETH</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            
+            <div class="panel-container">
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex-1 flex flex-col">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4 border-b border-gray-700 pb-2">Network & Auth</h2>
+                    
+                    <div class="space-y-4 flex-1">
+                        <div>
+                            <label class="block text-xs mb-1 text-gray-400">Pilih Jaringan</label>
+                            <select id="networkSelect" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm">
+                                <option value="4326|MEGA ETH|https://lb.drpc.live/megaeth/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">MEGA ETH (4326)</option>
+                                <option value="1|ETHEREUM|https://lb.drpc.live/ethereum/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">ETHEREUM MAINNET (1)</option>
+                                <option value="8453|BASE|https://lb.drpc.live/base/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">BASECHAIN (8453)</option>
+                                <option value="33139|APECHAIN|https://lb.drpc.live/apechain/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">APECHAIN (33139)</option>
+                                <option value="143|MONAD|https://lb.drpc.live/monad-mainnet/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">MONAD (143)</option>
+                                <option value="42161|ARBITRUM|https://arbitrum.drpc.org" selected>ARBITRUM (42161)</option>
+                                <option value="69000|ANIMECHAIN|https://rpc-animechain-39xf6m45e3.t.conduit.xyz/">ANIMECHAIN (69000)</option>
+                                <option value="manual">⚙️ INPUT MANUAL</option>
+                            </select>
+                        </div>
+
+                        <div id="manualInputFields" class="hidden space-y-3 p-3 bg-gray-900 rounded-xl border border-gray-700">
+                            <input type="text" id="manualRpc" placeholder="RPC URL (https://...)" class="w-full bg-transparent border-b border-gray-700 px-2 py-1 text-sm outline-none">
+                            <input type="number" id="manualChainId" placeholder="Chain ID" class="w-full bg-transparent border-b border-gray-700 px-2 py-1 text-sm outline-none">
+                            <input type="text" id="manualNetName" placeholder="Network Name" class="w-full bg-transparent border-b border-gray-700 px-2 py-1 text-sm uppercase outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs mb-1 text-gray-400">Private Key</label>
+                            <input type="password" id="privateKey" placeholder="0x..." class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
+                        <div class="pt-2">
+                            <label class="block text-xs mb-2 text-gray-400">Gas Mode Setting</label>
+                            <div class="flex space-x-4 bg-gray-900 p-3 rounded-xl border border-gray-700">
+                                <label class="flex items-center space-x-2 text-sm cursor-pointer">
+                                    <input type="radio" name="gasMode" value="auto" checked>
+                                    <span class="text-gray-300">Auto (EIP-1559)</span>
+                                </label>
+                                <label class="flex items-center space-x-2 text-sm cursor-pointer">
+                                    <input type="radio" name="gasMode" value="legacy">
+                                    <span class="text-gray-300">Legacy</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button onclick="updateWalletInfo()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm shadow-lg shadow-indigo-900/20 transition-all flex justify-center items-center gap-2 mt-2">
+                            <span>🔍</span> Cek Balance & Hubungkan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex-shrink-0">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-3 border-b border-gray-700 pb-2">Current Contracts</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <span class="text-[10px] text-gray-500 uppercase block mb-1">Receiver Address</span>
+                            <input type="text" id="receiverAddr" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-green-400 font-mono outline-none" placeholder="Not Deployed">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-500 uppercase block mb-1">Factory Address</span>
+                            <input type="text" id="factoryAddr" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-green-400 font-mono outline-none" placeholder="Not Deployed">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-container">
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4 border-b border-gray-700 pb-2">Deployment</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="deployContract('Receiver')" class="py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm shadow-lg shadow-blue-900/20 transition-all">Deploy Receiver</button>
+                        <button onclick="deployContract('Factory')" class="py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold text-sm shadow-lg shadow-purple-900/20 transition-all">Deploy Factory</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex-1 flex flex-col">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4 border-b border-gray-700 pb-2">Batch Minting</h2>
+                    <div class="space-y-4 flex-1">
+                        <input type="number" id="cloneCount" oninput="savedBatchGasLimit = null" placeholder="Jumlah Clone (Max 100)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-green-500">
+                        <input type="text" id="nftAddress" oninput="savedBatchGasLimit = null" placeholder="Target NFT Contract Address" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm outline-none font-mono focus:ring-2 focus:ring-green-500">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <button onclick="dryRunBatch()" class="py-3 bg-yellow-600 hover:bg-yellow-500 rounded-xl font-bold text-sm shadow-lg shadow-yellow-900/20 transition-all">
+                            🔍 Dry Run
+                        </button>
+                        <button onclick="executeBatch()" class="py-3 bg-green-600 hover:bg-green-500 rounded-xl font-bold text-sm shadow-lg shadow-green-900/20 transition-all">
+                            🚀 Execute Batch
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex-shrink-0">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4 border-b border-gray-700 pb-2">Whitelist Manager</h2>
+                    <input type="text" id="wlInput" placeholder="Address or Price (ETH)" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm outline-none font-mono mb-3">
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="manageWL('add')" class="py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">ADD WL</button>
+                        <button onclick="manageWL('delete')" class="py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">DEL WL</button>
+                        <button onclick="manageWL('setPrice')" class="py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-bold transition-colors">SET PRICE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-container lg:sticky lg:top-8">
+                <div class="bg-[#0a0f18] rounded-2xl border border-gray-700 shadow-2xl flex flex-col overflow-hidden h-[650px]">
+                    
+                    <div class="bg-gray-800/80 px-4 py-3 border-b border-gray-700 flex justify-between items-center">
+                        <div class="flex space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-[11px] text-gray-400 font-mono tracking-widest">SYSTEM_LOG</span>
+                        <button onclick="clearLog()" class="text-[11px] text-blue-400 hover:text-blue-300 font-bold tracking-wider">CLEAR</button>
+                    </div>
+
+                    <div id="terminalLog" class="p-5 overflow-y-auto flex-1 text-[12px] space-y-2 font-mono leading-relaxed pb-8">
+                        <div class="text-blue-500 opacity-70">$ Initializing sequence...</div>
+                        <div class="text-green-500">Ready for connection.</div>
+                    </div>
+
+                    <div id="loader" class="hidden p-4 bg-blue-900/20 border-t border-blue-900/30">
+                        <div class="flex items-center justify-center space-x-3">
+                            <div class="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-[11px] text-blue-300 loading-pulse uppercase tracking-widest font-bold">Awaiting Transaction...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const MINT_HELP = "0x00005EA00Ac477B1030CE78506496e8C2dE24bf5";
+        const RECIPIENT = "0x0000a26b00c1F0DF003000390027140000fAa719";
+
+        let ReceiverArtifact = { abi: [], bytecode: "0x" };
+        let FactoryArtifact = { abi: [], bytecode: "0x" };
+        
+        let savedBatchGasLimit = null;
+
+        function log(msg, type = 'info') {
+            const container = document.getElementById('terminalLog');
+            const div = document.createElement('div');
+            const color = {
+                info: 'text-gray-400',
+                success: 'text-green-500',
+                error: 'text-red-500 font-bold',
+                warn: 'text-yellow-400',
+                cmd: 'text-blue-400'
+            }[type];
+            
+            div.className = color;
+            div.innerHTML = `<span class="opacity-50 mr-2">></span>${msg}`;
+            container.appendChild(div);
+            // Auto-scroll tetap bekerja sempurna karena CSS sudah diperbaiki
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLog() { document.getElementById('terminalLog').innerHTML = '<div class="text-green-500">Ready for connection.</div>'; }
+
+        async function loadLocalArtifacts() {
+            try {
+                const timestamp = Date.now();
+                const resRec = await fetch(`./TokenFactoryReceiverV2.json?t=${timestamp}`);
+                const dataRec = await resRec.json();
+                ReceiverArtifact.abi = dataRec.abi;
+                ReceiverArtifact.bytecode = dataRec.bytecode;
+
+                const resFac = await fetch(`./FactoryCloner.json?t=${timestamp}`);
+                const dataFac = await resFac.json();
+                FactoryArtifact.abi = dataFac.abi;
+                FactoryArtifact.bytecode = dataFac.bytecode;
+
+                log("File ABI & Bytecode lokal berhasil dimuat.", "success");
+            } catch (e) {
+                log(`Gagal memuat file JSON lokal: ${e.message}`, "error");
+            }
+        }
+
+        async function loadContractFromStore(chainId) {
+            try {
+                const res = await fetch('./contracts.json?t=' + Date.now());
+                const store = await res.json();
+                
+                if (store[chainId]) {
+                    document.getElementById('receiverAddr').value = store[chainId].receiver || "";
+                    document.getElementById('factoryAddr').value = store[chainId].factory || "";
+                    log(`Loaded contracts from contracts.json for Chain ID: ${chainId}`, 'info');
+                } else {
+                    document.getElementById('receiverAddr').value = "";
+                    document.getElementById('factoryAddr').value = "";
+                }
+            } catch (e) {
+                console.log("Belum ada data di contracts.json atau file kosong.");
+            }
+        }
+
+        async function saveContractToStore(chainId, networkName, receiver, factory, rpc) {
+            try {
+                const payload = {
+                    chainId: chainId,
+                    data: {
+                        network_name: networkName,
+                        receiver: receiver,
+                        factory: factory,
+                        rpc: rpc,
+                        last_updated: new Date().toLocaleString()
+                    }
+                };
+
+                await fetch('/save-contracts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                log(`Data disimpan ke contracts.json`, 'success');
+            } catch (e) {
+                log(`Gagal menyimpan ke contracts.json: ${e.message}`, 'error');
+            }
+        }
+
+        function getNetworkDetails() {
+            const val = document.getElementById('networkSelect').value;
+            if (val === 'manual') {
+                return {
+                    chainId: document.getElementById('manualChainId').value,
+                    name: document.getElementById('manualNetName').value || 'CUSTOM',
+                    rpc: document.getElementById('manualRpc').value
+                };
+            }
+            const parts = val.split('|');
+            return { chainId: parts[0], name: parts[1], rpc: parts[2] };
+        }
+
+        async function updateWalletInfo() {
+            try {
+                if(typeof ethers === 'undefined') throw new Error("Ethers.js gagal dimuat.");
+
+                const pk = document.getElementById('privateKey').value.trim();
+                const networkData = getNetworkDetails();
+                
+                if (!pk) { log("Masukkan Private Key terlebih dahulu!", "error"); return; }
+                if (!networkData.rpc) { log("Pilih jaringan atau masukkan RPC yang valid!", "error"); return; }
+
+                log(`Menghubungkan ke ${networkData.name}...`, "info");
+                const provider = new ethers.providers.JsonRpcProvider(networkData.rpc);
+                const wallet = new ethers.Wallet(pk, provider);
+                const balance = await provider.getBalance(wallet.address);
+                
+                const balanceStr = ethers.utils.formatEther(balance);
+                const match = balanceStr.match(/^-?\d+(?:\.\d{0,7})?/);
+                const displayBalance = match ? match[0] : balanceStr;
+                
+                document.getElementById('walletDisplay').classList.remove('hidden');
+                document.getElementById('userAddr').innerText = wallet.address.slice(0,6) + '...' + wallet.address.slice(-4);
+                document.getElementById('userBalance').innerText = `${displayBalance} ETH`;
+                
+                log(`Wallet terhubung! Saldo: ${displayBalance} ETH`, "success");
+                loadContractFromStore(networkData.chainId);
+            } catch (e) {
+                log(`Gagal: ${e.message}`, "error");
+            }
+        }
+
+        async function getProviderSigner() {
+            const net = getNetworkDetails();
+            const pk = document.getElementById('privateKey').value.trim();
+            if (!pk) throw new Error("Private Key kosong.");
+            const provider = new ethers.providers.JsonRpcProvider(net.rpc);
+            const wallet = new ethers.Wallet(pk, provider);
+            return { provider, wallet, net };
+        }
+
+        async function getGasOptions(provider) {
+            const gasMode = document.querySelector('input[name="gasMode"]:checked').value;
+            const fee = await provider.getFeeData();
+
+            if (gasMode === 'auto' && fee.maxFeePerGas) {
+                return {
+                    maxFeePerGas: fee.maxFeePerGas.mul(120).div(100),
+                    maxPriorityFeePerGas: fee.maxPriorityFeePerGas ? fee.maxPriorityFeePerGas.mul(120).div(100) : ethers.BigNumber.from(0)
+                };
+            } else {
+                const gasPrice = fee.gasPrice || await provider.getGasPrice();
+                return { gasPrice: gasPrice.mul(120).div(100) };
+            }
+        }
+
+        async function checkBalanceAndCost(provider, wallet, estGas, gasOptions, txValueWei = ethers.BigNumber.from(0)) {
+            let gasPrice = gasOptions.maxFeePerGas || gasOptions.gasPrice;
+            if (!gasPrice) gasPrice = await provider.getGasPrice();
+
+            const gasLimitWithBuffer = estGas.add(estGas.div(10));
+            const estimatedFeeWei = gasLimitWithBuffer.mul(gasPrice);
+            const totalRequiredWei = estimatedFeeWei.add(txValueWei);
+
+            const balanceWei = await provider.getBalance(wallet.address);
+            const reqEth = ethers.utils.formatEther(totalRequiredWei);
+
+            if (balanceWei.lt(totalRequiredWei)) {
+                const shortageWei = totalRequiredWei.sub(balanceWei);
+                const shortageEth = ethers.utils.formatEther(shortageWei);
+                throw new Error(`Saldo Kurang! Estimasi total biaya: ${parseFloat(reqEth).toFixed(7)} ETH. Anda kekurangan ${parseFloat(shortageEth).toFixed(7)} ETH.`);
+            }
+
+            log(`Dry Run Berhasil. Estimasi Gas: ${estGas.toString()} (Dana Aman. Estimasi Biaya: ~${parseFloat(reqEth).toFixed(7)} ETH)`, 'success');
+            return gasLimitWithBuffer;
+        }
+
+        async function deployContract(type) {
+            const loader = document.getElementById('loader');
+            try {
+                const { provider, wallet, net } = await getProviderSigner();
+                const artifact = type === 'Receiver' ? ReceiverArtifact : FactoryArtifact;
+                
+                if (!artifact.abi || artifact.abi.length === 0) {
+                    throw new Error(`ABI/Bytecode belum diload. Harap refresh.`);
+                }
+
+                log(`Memulai Deploy ${type} di jaringan ${net.name}...`, 'cmd');
+                loader.classList.remove('hidden');
+
+                const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
+                let args = [];
+                if (type === 'Factory') {
+                    const rec = document.getElementById('receiverAddr').value;
+                    if (!rec || rec === "") throw new Error("Deploy atau masukkan Receiver Address dulu!");
+                    args = [rec];
+                }
+
+                log(`Simulasi Gas (Dry Run)...`, 'info');
+                const gasOptions = await getGasOptions(provider);
+                const deployTx = factory.getDeployTransaction(...args, gasOptions);
+                const estGas = await provider.estimateGas(deployTx);
+                
+                const gasLimit = await checkBalanceAndCost(provider, wallet, estGas, gasOptions);
+                
+                log(`🚀 Mengirim Transaksi...`, 'info');
+                const contract = await factory.deploy(...args, { ...gasOptions, gasLimit });
+                
+                log(`Transaksi Terkirim! Hash: ${contract.deployTransaction.hash.slice(0,15)}...`, 'warn');
+                await contract.deployed();
+
+                const addrField = type === 'Receiver' ? 'receiverAddr' : 'factoryAddr';
+                document.getElementById(addrField).value = contract.address;
+                
+                await saveContractToStore(net.chainId, net.name, 
+                    type === 'Receiver' ? contract.address : null,
+                    type === 'Factory' ? contract.address : null,
+                    net.rpc
+                );
+
+                log(`✅ ${type} Sukses Deploy di: ${contract.address}`, 'success');
+                
+                const balance = await provider.getBalance(wallet.address);
+                const balanceStr = ethers.utils.formatEther(balance);
+                const match = balanceStr.match(/^-?\d+(?:\.\d{0,7})?/);
+                document.getElementById('userBalance').innerText = `${match ? match[0] : balanceStr} ETH`;
+
+            } catch (e) {
+                log(`Deploy Error: ${e.reason || e.message}`, 'error');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        async function dryRunBatch() {
+            const loader = document.getElementById('loader');
+            try {
+                const { provider, wallet } = await getProviderSigner();
+                const factoryAddr = document.getElementById('factoryAddr').value;
+                const count = document.getElementById('cloneCount').value;
+                const nft = document.getElementById('nftAddress').value;
+
+                if (!factoryAddr) throw new Error("Factory Address kosong.");
+                if (!nft) throw new Error("NFT Address kosong.");
+                if (!count) throw new Error("Jumlah clone tidak diisi.");
+
+                log(`Mengecek Simulasi Batch Mint: ${count} units...`, 'cmd');
+                loader.classList.remove('hidden');
+
+                const contract = new ethers.Contract(factoryAddr, FactoryArtifact.abi, wallet);
+                const args = [MINT_HELP, nft, RECIPIENT, wallet.address, 1, parseInt(count)];
+                const gasOptions = await getGasOptions(provider);
+
+                log(`Simulasi Batch (Dry Run)...`, 'info');
+                const estGas = await contract.estimateGas.createAndMintBatch(...args, { ...gasOptions, value: 0 });
+                
+                savedBatchGasLimit = await checkBalanceAndCost(provider, wallet, estGas, gasOptions, ethers.BigNumber.from(0));
+                
+                log(`✅ Dry Run Selesai. Gas Limit disimpan. Silakan klik "Execute Batch".`, 'success');
+
+            } catch (e) {
+                savedBatchGasLimit = null;
+                log(`Dry Run Error: ${e.reason || e.message}`, 'error');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        async function executeBatch() {
+            const loader = document.getElementById('loader');
+            try {
+                if (!savedBatchGasLimit) {
+                    throw new Error("Silakan klik 'Dry Run' terlebih dahulu!");
+                }
+
+                const { provider, wallet } = await getProviderSigner();
+                const factoryAddr = document.getElementById('factoryAddr').value;
+                const count = document.getElementById('cloneCount').value;
+                const nft = document.getElementById('nftAddress').value;
+
+                log(`🚀 Mengeksekusi Batch Mint...`, 'cmd');
+                loader.classList.remove('hidden');
+
+                const contract = new ethers.Contract(factoryAddr, FactoryArtifact.abi, wallet);
+                const args = [MINT_HELP, nft, RECIPIENT, wallet.address, 1, parseInt(count)];
+                const gasOptions = await getGasOptions(provider);
+
+                const tx = await contract.createAndMintBatch(...args, { ...gasOptions, gasLimit: savedBatchGasLimit, value: 0 });
+                
+                log(`Broadcast Tx: ${tx.hash.slice(0,15)}...`, 'warn');
+                
+                try {
+                    await tx.wait(1);
+                    log(`✅ Batch Mint Selesai (Confirmed)!`, 'success');
+                } catch (waitErr) {
+                    console.warn(waitErr);
+                    log(`⚠️ Transaksi terkirim, tapi RPC lambat/gagal merespon konfirmasi. Cek Explorer: ${tx.hash}`, 'warn');
+                }
+                
+                const balance = await provider.getBalance(wallet.address);
+                const balanceStr = ethers.utils.formatEther(balance);
+                const match = balanceStr.match(/^-?\d+(?:\.\d{0,7})?/);
+                document.getElementById('userBalance').innerText = `${match ? match[0] : balanceStr} ETH`;
+
+                savedBatchGasLimit = null; 
+
+            } catch (e) {
+                log(`Batch Error: ${e.reason || e.message}`, 'error');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        async function manageWL(action) {
+            const loader = document.getElementById('loader');
+            try {
+                const { provider, wallet } = await getProviderSigner();
+                const fAddr = document.getElementById('factoryAddr').value;
+                const input = document.getElementById('wlInput').value;
+                
+                if(!fAddr) throw new Error("Factory Address kosong.");
+                if(!input) throw new Error("Kolom input WL kosong.");
+
+                const contract = new ethers.Contract(fAddr, FactoryArtifact.abi, wallet);
+                const gasOptions = await getGasOptions(provider);
+                loader.classList.remove('hidden');
+
+                log(`Simulasi perintah ${action.toUpperCase()}...`, 'cmd');
+
+                let estGas, tx;
+                if(action === 'add') {
+                    estGas = await contract.estimateGas.addToWhitelist(input, gasOptions);
+                    const gasLimit = await checkBalanceAndCost(provider, wallet, estGas, gasOptions);
+                    tx = await contract.addToWhitelist(input, { ...gasOptions, gasLimit });
+                }
+                else if(action === 'delete') {
+                    estGas = await contract.estimateGas.removeFromWhitelist(input, gasOptions);
+                    const gasLimit = await checkBalanceAndCost(provider, wallet, estGas, gasOptions);
+                    tx = await contract.removeFromWhitelist(input, { ...gasOptions, gasLimit });
+                }
+                else if(action === 'setPrice') {
+                    const priceWei = ethers.utils.parseEther(input);
+                    estGas = await contract.estimateGas.setMinETHWhitelist(priceWei, gasOptions);
+                    const gasLimit = await checkBalanceAndCost(provider, wallet, estGas, gasOptions);
+                    tx = await contract.setMinETHWhitelist(priceWei, { ...gasOptions, gasLimit });
+                }
+
+                log(`Tx Terkirim: ${tx.hash.slice(0,15)}...`, 'warn');
+                
+                try {
+                    await tx.wait(1);
+                    log(`✅ Aksi ${action.toUpperCase()} Berhasil!`, 'success');
+                } catch(e) {
+                    //log(`⚠️ Transaksi terkirim, tapi RPC lambat/gagal merespon. Cek Explorer.`, 'warn');
+                }
+                
+                const balance = await provider.getBalance(wallet.address);
+                const balanceStr = ethers.utils.formatEther(balance);
+                const match = balanceStr.match(/^-?\d+(?:\.\d{0,7})?/);
+                document.getElementById('userBalance').innerText = `${match ? match[0] : balanceStr} ETH`;
+
+            } catch (e) {
+                log(`WL Error: ${e.reason || e.message}`, 'error');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('networkSelect').addEventListener('change', (e) => {
+            const isManual = e.target.value === 'manual';
+            document.getElementById('manualInputFields').classList.toggle('hidden', !isManual);
+            const net = getNetworkDetails();
+            loadContractFromStore(net.chainId);
+        });
+
+        window.addEventListener('load', () => {
+            loadLocalArtifacts();
+            const net = getNetworkDetails();
+            loadContractFromStore(net.chainId);
+        });
+    </script>
+</body>
+</html>

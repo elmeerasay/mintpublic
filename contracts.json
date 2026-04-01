@@ -1,0 +1,30 @@
+{
+    "1": {
+        "network_name": "ETHEREUM",
+        "receiver": "0xf1440eB6437DfC31702DD5DDD635F0c1a42d7928",
+        "factory": "0x44E3990621738751e6a352dBB149aD6Ed03ef53d",
+        "rpc": "https://lb.drpc.live/ethereum/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4",
+        "last_updated": "3/2/2026, 2:55:49 AM"
+    },
+    "8453": {
+        "network_name": "BASE",
+        "receiver": "0x5895aF509BC008970ddb2382dBD71E70eB6a3Cd6",
+        "factory": "0x81A3B5bCd9D9Bf82b64B9D06317204Df8EB880Fc",
+        "rpc": "https://lb.drpc.live/base/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4",
+        "last_updated": "02/03/2026, 02.00.04"
+    },
+    "69000": {
+        "network_name": "ANIMECHAIN",
+        "receiver": "0x443323a68F170C3358fA5168bf948a00F0da49c9",
+        "factory": "0xA2ead8857987D26704eFcbbc91eFb2aCDFf90246",
+        "rpc": "https://rpc-animechain-39xf6m45e3.t.conduit.xyz/",
+        "last_updated": "19/03/2026, 04.45.19"
+    },
+    "42161": {
+        "network_name": "ARBITRUM",
+        "receiver": "0x6bc017fCac506036c5B334C47b68371E1c7a0Fa3",
+        "factory": "0x405847fe09a4D233D0438E509Cdd18fa198bBeb7",
+        "rpc": "https://arbitrum.drpc.org",
+        "last_updated": "4/1/2026, 5:09:30 PM"
+    }
+}
