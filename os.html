@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT Studio Pro - Turbo PNG Batch</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root { --primary: #a855f7; --secondary: #6366f1; --accent: #ec4899; --success: #10b981; --danger: #ef4444; --bg: #0f172a; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .main-card { width: 100%; max-width: 550px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); border-radius: 24px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        h2 { text-align: center; background: linear-gradient(to right, #d8b4fe, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 20px 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        input, select, textarea, .pattern-box { width: 100%; padding: 14px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; outline: none; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 70px; resize: none; font-family: inherit; }
+        #manual-rpc-group { display: none; margin-top: 10px; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 13px; margin-top: 10px; }
+        .btn-fetch { background: var(--primary); }
+        .btn-opensea { background: linear-gradient(to right, #2081e2, #6366f1); }
+        .btn-preview { background: var(--secondary); }
+        .btn-stop { background: var(--danger); width: auto; padding: 5px 15px; font-size: 10px; margin: 10px auto 0; display: none; }
+        .btn-main-download { background: linear-gradient(to right, #10b981, #6366f1); margin-top: 15px; font-size: 14px; }
+        .btn-clear { background: #334155; font-size: 10px; padding: 5px 10px; width: auto; margin-top: 0; }
+        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        .mode-tabs { display: flex; gap: 6px; margin-bottom: 15px; }
+        .mode-tab { flex: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center; transition: 0.3s; }
+        .mode-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .mode-tab:hover:not(.active) { background: rgba(255,255,255,0.1); }
+
+        .info-ui { display: none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-item { background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; }
+        .pattern-box { font-family: monospace; font-size: 10px; color: #4ade80; word-break: break-all; margin-bottom: 15px; background: #000; border-left: 3px solid var(--accent); display: flex; align-items: center; min-height: 45px; padding: 0 10px; }
+        .loading-overlay { display: none; text-align: center; margin: 20px 0; padding: 15px; background: rgba(168, 85, 247, 0.1); border-radius: 12px; border: 1px dashed var(--primary); }
+        .spinner { width: 25px; height: 25px; border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .log-box { margin-top: 10px; padding: 15px; background: #000; border-radius: 12px; border: 1px solid #334155; max-height: 120px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #cbd5e1; }
+        .log-entry { margin-bottom: 4px; border-bottom: 1px solid #1e293b; padding-bottom: 2px; }
+
+        .fetch-status {
+            margin-top: 10px; margin-bottom: 15px; padding: 10px 14px; background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25); border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: var(--success); display: none; text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="main-card">
+    <h2>NFT Studio Pro</h2>
+
+    <div class="mode-tabs">
+        <div class="mode-tab active" id="tab-rpc" onclick="switchMode('rpc')">⛓ RPC / Contract</div>
+        <div class="mode-tab" id="tab-opensea" onclick="switchMode('opensea')">🌊 OpenSea</div>
+    </div>
+
+    <!-- RPC MODE -->
+    <div id="mode-rpc">
+        <div class="form-group">
+            <label>Network</label>
+            <select id="network" onchange="toggleManualRpc()">
+                <option value="https://lb.drpc.live/polygon/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">Polygon (ZAN)</option>
+                <option value="https://lb.drpc.live/apechain/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">ApeChain</option>
+                <option value="https://lb.drpc.live/base/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">Base</option>
+                <option value="manual">Manual Input RPC</option>
+            </select>
+            <div id="manual-rpc-group">
+                <input type="text" id="manual-rpc-url" placeholder="https://your-rpc-url.com">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Contract Address</label>
+            <input type="text" id="address" placeholder="0x..." value="">
+        </div>
+        <button class="btn btn-fetch" onclick="fetchNFT()">Fetch NFT Details</button>
+    </div>
+
+    <!-- OPENSEA MODE -->
+    <div id="mode-opensea" style="display:none;">
+        <div class="form-group">
+            <label>OpenSea Collection</label>
+            <input type="text" id="opensea-url" placeholder="Paste URL or slug: cryptopunks, boredapeyachtclub, etc." onkeydown="if(event.key==='Enter')fetchFromOpenSea()">
+        </div>
+        <button class="btn btn-opensea" onclick="fetchFromOpenSea()">🌊 Fetch from OpenSea</button>
+    </div>
+
+    <div class="loading-overlay" id="loading-status-init" style="display:none;">
+        <div class="spinner"></div>
+        <span id="loading-text-init" style="font-size: 12px; color: var(--primary); font-weight: bold;">Connecting...</span>
+    </div>
+
+    <div class="info-ui" id="info-ui">
+        <div class="stats-grid">
+            <div class="stat-item"><span>Name</span><br><strong id="m-name">-</strong></div>
+            <div class="stat-item"><span>Symbol</span><br><strong id="m-symbol">-</strong></div>
+            <div class="stat-item"><span>Supply</span><br><strong id="m-supply">-</strong></div>
+        </div>
+
+
+
+        <div class="fetch-status" id="fetch-status"></div>
+
+        <div class="form-group">
+            <label>Collection Size</label>
+            <input type="number" id="manual-limit" placeholder="Contoh: 150">
+        </div>
+
+        <div id="gateway-wrap">
+            <label>Active Smart Gateway</label>
+            <div class="pattern-box" id="p-active-gateway">Searching...</div>
+        </div>
+
+        <div style="margin-top: 15px; border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03);">
+            <label style="color: #4ade80; margin-bottom: 8px;">Metadata Editor</label>
+            <input type="text" id="edit-name" placeholder="Nama Koleksi" style="margin-bottom: 10px; font-size: 12px;">
+            <textarea id="edit-desc" placeholder="Deskripsi baru..." style="font-size: 12px;"></textarea>
+        </div>
+
+        <label style="margin-top: 15px;">Collage Preview Settings</label>
+        <select id="gridType">
+            <option value="5,3">Grid 5x3 (15 Images)</option>
+            <option value="5,5">Grid 5x5 (25 Images)</option>
+            <option value="10,5">Grid 10x5 (50 Images)</option>
+            <option value="10,10">Grid 10x10 (100 Images)</option>
+        </select>
+
+        <button class="btn btn-preview" onclick="generateCollagePreview()">Generate Collage Preview</button>
+        <img id="collage-preview-img" alt="Collage Preview" style="width: 100%; border-radius: 12px; margin-top: 15px; border: 2px solid var(--secondary); display: none;">
+
+        <button class="btn btn-main-download" onclick="downloadMasterZip()">Download Package (.ZIP)</button>
+
+        <div class="loading-overlay" id="loading-status">
+            <div class="spinner"></div>
+            <span id="loading-text">Processing...</span><br>
+            <button class="btn btn-stop" id="btn-stop-collage" onclick="stopCollageProcess()">STOP PROCESS</button>
+        </div>
+    </div>
+
+    <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+        <label>Activity Log</label>
+        <button class="btn btn-clear" onclick="clearLog()">Clear Log</button>
+    </div>
+    <div class="log-box" id="log-box">
+        <div class="log-entry">> System Ready.</div>
+    </div>
+</div>
+
+<canvas id="collageCanvas" style="display:none;"></canvas>
+
+<script>
+    let imgCID = "", jsonCID = "", nftCollectionName = "NFT", isCollageRunning = false, contractCollectionSize = 0;
+    let activeGatewayUrl = "";
+    let metaCache = [];
+    let currentMode = "rpc";
+    let osAllItems = [];
+    let osFetchAborted = false;
+    let osIsFetching = false;
+    let osCollectionDesc = "";
+    const MONITORING_DELAY = 5000;
+
+    const GQL = 'https://opensea.io/__api/graphql';
+    const PROXY = 'https://corsproxy.io/?';
+
+    const GATEWAYS = [
+        "https://alchemy.mypinata.cloud/ipfs/{cid}/",
+        "https://ipfs.io/ipfs/{cid}/",
+        "https://{cid}.ipfs.w3s.link/",
+        "https://{cid}.ipfs.4everland.io/"
+    ];
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.getElementById('tab-rpc').className = 'mode-tab' + (mode === 'rpc' ? ' active' : '');
+        document.getElementById('tab-opensea').className = 'mode-tab' + (mode === 'opensea' ? ' active' : '');
+        document.getElementById('mode-rpc').style.display = mode === 'rpc' ? 'block' : 'none';
+        document.getElementById('mode-opensea').style.display = mode === 'opensea' ? 'block' : 'none';
+        document.getElementById('info-ui').style.display = 'none';
+        document.getElementById('collage-preview-img').style.display = 'none';
+        osAllItems = [];
+        osFetchAborted = true;
+    }
+
+    function toggleManualRpc() {
+        document.getElementById('manual-rpc-group').style.display = document.getElementById('network').value === 'manual' ? 'block' : 'none';
+    }
+
+    function addLog(msg) {
+        var box = document.getElementById('log-box');
+        var entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = '> ' + new Date().toLocaleTimeString() + ': ' + msg;
+        box.prepend(entry);
+    }
+
+    function clearLog() { document.getElementById('log-box').innerHTML = '<div class="log-entry">> Log cleared.</div>'; }
+
+    function showLoading(text, showStop) {
+        var isInfoVisible = document.getElementById('info-ui').style.display === 'block';
+        var targetOverlay = isInfoVisible ? 'loading-status' : 'loading-status-init';
+        var targetText = isInfoVisible ? 'loading-text' : 'loading-text-init';
+        document.getElementById(targetOverlay).style.display = 'block';
+        document.getElementById(targetText).innerText = text;
+        if (isInfoVisible) document.getElementById('btn-stop-collage').style.display = showStop ? 'inline-block' : 'none';
+    }
+
+    function hideLoading() {
+        document.getElementById('loading-status-init').style.display = 'none';
+        document.getElementById('loading-status').style.display = 'none';
+    }
+
+    function stopCollageProcess() {
+        isCollageRunning = false;
+        osFetchAborted = true;
+        addLog("Process stopped.");
+        hideLoading();
+    }
+
+    function cleanCID(uri) {
+        if (!uri) return "";
+        var cleaned = uri.replace('ipfs://', '').replace(/https:\/\/.*\.ipfs\..*\/ipfs\//, '').replace('https://gateway.pinata.cloud/ipfs/', '').replace('https://ipfs.io/ipfs/', '').replace('https://gateway.pinit.io/ipfs/', '');
+        return cleaned.split('/')[0];
+    }
+
+    async function convertToPng(blob) {
+        return new Promise(function(resolve) {
+            var img = new Image();
+            var url = URL.createObjectURL(blob);
+            img.crossOrigin = "anonymous";
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                canvas.toBlob(function(result) { URL.revokeObjectURL(url); resolve(result); }, 'image/png');
+            };
+            img.onerror = function() { URL.revokeObjectURL(url); resolve(blob); };
+            img.src = url;
+        });
+    }
+
+    async function smartFetch(cid, path, type) {
+        type = type || 'json';
+        for (var i = 0; i < GATEWAYS.length; i++) {
+            var baseUrl = GATEWAYS[i].replace('{cid}', cid);
+            var fullUrl = baseUrl + path;
+            try {
+                var response = await fetch(fullUrl);
+                if (response.ok) {
+                    activeGatewayUrl = baseUrl;
+                    document.getElementById('p-active-gateway').innerText = baseUrl;
+                    return type === 'json' ? await response.json() : await response.blob();
+                }
+            } catch (e) { continue; }
+        }
+        return null;
+    }
+
+    async function fetchWithInfiniteRetry(cid, id) {
+        while (isCollageRunning) {
+            var data = await smartFetch(cid, id + '.json', 'json');
+            if (data) return data;
+            addLog('Wait #' + id + ' (Gateway Busy). Retrying...');
+            await new Promise(function(r) { setTimeout(r, MONITORING_DELAY); });
+        }
+    }
+
+    // ==================== RPC MODE ====================
+
+    async function fetchNFT() {
+        var addr = document.getElementById('address').value.trim();
+        var rpc = document.getElementById('network').value === 'manual' ? document.getElementById('manual-rpc-url').value.trim() : document.getElementById('network').value;
+        if (!addr || !rpc) return alert("Isi alamat dan RPC!");
+        showLoading("Connecting...");
+        try {
+            var provider = new ethers.providers.JsonRpcProvider(rpc);
+            var abi = ["function name() view returns (string)", "function symbol() view returns (string)", "function totalSupply() view returns (uint256)", "function collectionSize() view returns (uint256)", "function tokenURI(uint256) view returns (string)"];
+            var contract = new ethers.Contract(addr, abi, provider);
+            var results = await Promise.all([contract.name(), contract.symbol(), contract.totalSupply(), contract.tokenURI(1)]);
+            var name = results[0], symbol = results[1], supply = results[2], uri = results[3];
+            var size; try { size = await contract.collectionSize(); } catch (e) { size = supply; }
+            contractCollectionSize = parseInt(size.toString());
+            nftCollectionName = name;
+            jsonCID = cleanCID(uri);
+            var meta = await smartFetch(jsonCID, "1.json", 'json');
+            if (!meta) throw new Error("Gagal akses IPFS.");
+            imgCID = cleanCID(meta.image);
+            document.getElementById('m-name').innerText = name;
+            document.getElementById('m-symbol').innerText = symbol;
+            document.getElementById('m-supply').innerText = supply.toString();
+            document.getElementById('manual-limit').value = contractCollectionSize;
+            document.getElementById('edit-name').value = name;
+            document.getElementById('edit-desc').value = meta.description || "";
+            document.getElementById('gateway-wrap').style.display = 'block';
+            document.getElementById('fetch-status').style.display = 'none';
+            document.getElementById('info-ui').style.display = 'block';
+            addLog('Connected! Gateway: ' + activeGatewayUrl);
+        } catch (e) { addLog("Error: " + e.message); } finally { hideLoading(); }
+    }
+
+    async function fetchImageBlob(id) {
+        var targetId = (id > contractCollectionSize) ? Math.floor(Math.random() * contractCollectionSize) + 1 : id;
+        var meta = await smartFetch(jsonCID, targetId + '.json', 'json');
+        if (!meta) return null;
+        var currentImgCID = cleanCID(meta.image);
+        var imagePath = meta.image.split('/').pop();
+        var blob = await smartFetch(currentImgCID, imagePath, 'blob');
+        if (blob) {
+            var pngBlob = await convertToPng(blob);
+            return { blob: pngBlob, ext: 'png' };
+        }
+        return null;
+    }
+
+    // ==================== OPENSEA MODE ====================
+
+    function extractSlug(input) {
+        input = input.trim();
+        var m = input.match(/opensea\.io\/collection\/([^\/\?#]+)/);
+        if (m) return m[1];
+        if (/^[a-z0-9][a-z0-9-]*$/.test(input)) return input;
+        return input.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    }
+
+    async function osGql(query, variables) {
+        var body = JSON.stringify({ query: query, variables: variables || {} });
+        var opts = { method: 'POST', headers: { 'content-type': 'application/json' }, body: body };
+        try {
+            var r = await fetch(GQL, opts);
+            if (r.ok) { var j = await r.json(); if (j.data) return j; }
+        } catch(e) {}
+        var r2 = await fetch(PROXY + encodeURIComponent(GQL), opts);
+        if (!r2.ok) throw new Error('HTTP ' + r2.status);
+        var j2 = await r2.json();
+        if (j2.errors && !j2.data) throw new Error(j2.errors[0].message);
+        return j2;
+    }
+
+    async function fetchFromOpenSea() {
+        var input = document.getElementById('opensea-url').value;
+        if (!input.trim()) return alert('Paste a URL or slug!');
+
+        osFetchAborted = true;
+        await new Promise(function(r) { setTimeout(r, 100); });
+
+        var slug = extractSlug(input);
+        osAllItems = [];
+        osFetchAborted = false;
+        osIsFetching = true;
+        osCollectionDesc = '';
+
+        addLog('OpenSea: fetching "' + slug + '"...');
+        showLoading('Connecting to OpenSea...');
+
+        try {
+            var results = await Promise.all([
+                osGql('query($s:String!){ collectionBySlug(slug:$s){ ... on Collection { name description } } }', { s: slug }),
+                osGql('query($s:String!){ collectionItemsCount(collectionSlug:$s){ count } }', { s: slug }),
+                osGql('query($s:String!){ collectionItems(collectionSlug:$s, limit:50, sort:{by:CREATED_DATE, direction:ASC}){ items { name description tokenId tokenUri imageUrl originalImageUrl } nextPageCursor } }', { s: slug })
+            ]);
+
+            var colInfo = results[0].data.collectionBySlug;
+            var totalSupply = results[1].data.collectionItemsCount.count;
+            var firstPage = results[2].data.collectionItems;
+
+            nftCollectionName = (colInfo && colInfo.name) || slug;
+            osCollectionDesc = (colInfo && colInfo.description) || '';
+            contractCollectionSize = totalSupply;
+            osAllItems = firstPage.items;
+
+            addLog('Collection: "' + nftCollectionName + '" | Supply: ' + totalSupply.toLocaleString());
+            addLog('First page: ' + osAllItems.length + ' items');
+
+            document.getElementById('m-name').innerText = nftCollectionName;
+            document.getElementById('m-symbol').innerText = slug;
+            document.getElementById('m-supply').innerText = totalSupply.toLocaleString();
+            document.getElementById('manual-limit').value = Math.min(totalSupply, 100);
+            document.getElementById('edit-name').value = nftCollectionName;
+            document.getElementById('edit-desc').value = osCollectionDesc;
+
+
+            document.getElementById('gateway-wrap').style.display = 'none';
+            document.getElementById('fetch-status').style.display = 'block';
+            document.getElementById('fetch-status').innerText = '⏳ Loading... ' + osAllItems.length + ' / ' + totalSupply + ' items';
+            document.getElementById('fetch-status').style.color = 'var(--success)';
+            document.getElementById('fetch-status').style.borderColor = 'rgba(16,185,129,0.25)';
+
+            document.getElementById('info-ui').style.display = 'block';
+            hideLoading();
+
+            if (firstPage.nextPageCursor) {
+                osLoadAllPages(slug, firstPage.nextPageCursor, totalSupply);
+            } else {
+                osIsFetching = false;
+                document.getElementById('fetch-status').innerText = '✅ All ' + osAllItems.length + ' items loaded!';
+            }
+
+        } catch(e) {
+            addLog('OpenSea Error: ' + e.message);
+            alert('Error: ' + e.message);
+            osIsFetching = false;
+            hideLoading();
+        }
+    }
+
+    async function osLoadAllPages(slug, startCursor, totalSupply) {
+        var cursor = startCursor;
+        var pageNum = 2;
+        var query = 'query($s:String!,$c:Cursor){ collectionItems(collectionSlug:$s, limit:50, after:$c, sort:{by:CREATED_DATE, direction:ASC}){ items { name description tokenId tokenUri imageUrl originalImageUrl } nextPageCursor } }';
+
+        while (cursor && !osFetchAborted) {
+            try {
+                var result = await osGql(query, { s: slug, c: cursor });
+                var data = result.data.collectionItems;
+                osAllItems = osAllItems.concat(data.items);
+                cursor = data.nextPageCursor;
+
+                document.getElementById('fetch-status').innerText = '⏳ Loading... ' + osAllItems.length.toLocaleString() + ' / ' + totalSupply.toLocaleString() + ' items (page ' + pageNum + ')';
+
+                if (pageNum % 20 === 0 || !cursor) {
+                    addLog('Page ' + pageNum + ': ' + osAllItems.length + '/' + totalSupply);
+                }
+                pageNum++;
+            } catch(e) {
+                addLog('Page ' + pageNum + ' error: ' + e.message);
+                await new Promise(function(r) { setTimeout(r, 2000); });
+            }
+        }
+
+        osIsFetching = false;
+        var statusEl = document.getElementById('fetch-status');
+        if (osFetchAborted) {
+            statusEl.innerText = '⛔ Fetch stopped at ' + osAllItems.length.toLocaleString() + ' items';
+            statusEl.style.color = 'var(--danger)';
+        } else {
+            statusEl.innerText = '✅ All ' + osAllItems.length.toLocaleString() + ' items loaded!';
+            addLog('Fetch complete: ' + osAllItems.length + ' items');
+        }
+    }
+
+    // ==================== COLLAGE (works for both modes) ====================
+
+    function toPng(url) {
+        if (url && url.indexOf('seadn.io') !== -1) {
+            return url + (url.indexOf('?') === -1 ? '?format=png' : '&format=png');
+        }
+        return url;
+    }
+
+    function loadImage(url) {
+        var pngUrl = toPng(url);
+        return new Promise(function(resolve) {
+            var img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = function() { resolve(img); };
+            img.onerror = function() {
+                var img2 = new Image();
+                img2.crossOrigin = 'anonymous';
+                img2.onload = function() { resolve(img2); };
+                img2.onerror = function() {
+                    var img3 = new Image();
+                    img3.onload = function() { resolve(img3); };
+                    img3.onerror = function() { resolve(null); };
+                    img3.src = pngUrl;
+                };
+                img2.src = PROXY + encodeURIComponent(pngUrl);
+            };
+            img.src = pngUrl;
+        });
+    }
+
+    async function generateCollagePreview() {
+        var grid = document.getElementById('gridType').value.split(',').map(Number);
+        var cols = grid[0], rows = grid[1], total = cols * rows;
+
+        if (currentMode === 'opensea' && osAllItems.length === 0) return alert('Fetch a collection first!');
+        if (currentMode === 'rpc' && !jsonCID) return alert('Fetch a collection first!');
+
+        isCollageRunning = true;
+        showLoading('Rendering 0/' + total + '...', true);
+
+        var canvas = document.getElementById('collageCanvas');
+        var ctx = canvas.getContext('2d');
+        var tileSize = 300;
+        canvas.width = cols * tileSize; canvas.height = rows * tileSize;
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('collage-preview-img').style.display = 'none';
+
+        var completed = 0;
+
+        if (currentMode === 'opensea') {
+            var tasks = [];
+            for (var k = 0; k < total; k++) {
+                var it = osAllItems[k % osAllItems.length];
+                if (it && it.imageUrl) tasks.push({ idx: k, url: it.imageUrl });
+            }
+
+            await Promise.all(tasks.map(async function(t) {
+                if (!isCollageRunning) return;
+                var img = await loadImage(t.url);
+                if (img && isCollageRunning) {
+                    ctx.drawImage(img, (t.idx % cols) * tileSize, Math.floor(t.idx / cols) * tileSize, tileSize, tileSize);
+                    completed++;
+                    if (completed % 10 === 0 || completed === tasks.length) showLoading('Rendering ' + completed + '/' + total + '...', true);
+                }
+            }));
+        } else {
+            var batchSize = 10;
+            for (var i = 1; i <= total; i += batchSize) {
+                if (!isCollageRunning) break;
+                var currentBatch = [];
+                for (var k = 0; k < Math.min(batchSize, total - i + 1); k++) currentBatch.push(i + k);
+                await Promise.all(currentBatch.map(async function(id) {
+                    var res = await fetchImageBlob(id);
+                    if (res && isCollageRunning) {
+                        var img = await new Promise(function(r) { var im = new Image(); im.onload = function() { r(im); }; im.src = URL.createObjectURL(res.blob); });
+                        ctx.drawImage(img, ((id-1)%cols)*tileSize, Math.floor((id-1)/cols)*tileSize, tileSize, tileSize);
+                        completed++;
+                        showLoading('Rendering ' + completed + '/' + total + '...', true);
+                    }
+                }));
+            }
+        }
+
+        if (isCollageRunning) {
+            try {
+                document.getElementById('collage-preview-img').src = canvas.toDataURL("image/jpeg", 0.8);
+                document.getElementById('collage-preview-img').style.display = 'block';
+                canvas.style.display = 'none';
+            } catch(e) {
+                addLog('ℹ Canvas CORS - showing live canvas preview instead.');
+                canvas.style.display = 'block';
+                canvas.style.width = '100%';
+                canvas.style.borderRadius = '12px';
+                canvas.style.marginTop = '15px';
+                canvas.style.border = '2px solid var(--secondary)';
+                document.getElementById('collage-preview-img').style.display = 'none';
+                var previewImg = document.getElementById('collage-preview-img');
+                previewImg.parentNode.insertBefore(canvas, previewImg.nextSibling);
+            }
+            addLog('Collage done! ' + completed + '/' + total + ' tiles rendered.');
+        }
+        isCollageRunning = false; hideLoading();
+    }
+
+    // ==================== ZIP DOWNLOAD (works for both modes) ====================
+
+    function triggerDownload(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+    }
+
+    async function downloadMasterZip() {
+        var userLimit = parseInt(document.getElementById('manual-limit').value);
+        var mainFolderName = document.getElementById('edit-name').value || nftCollectionName;
+        var currentDesc = document.getElementById('edit-desc').value;
+
+        if (currentMode === 'opensea' && osAllItems.length === 0) return alert('Fetch a collection first!');
+        if (currentMode === 'rpc' && !jsonCID) return alert('Fetch a collection first!');
+
+        var zip = new JSZip();
+        var root = zip.folder(mainFolderName);
+        var imgF = root.folder(mainFolderName + '_images');
+        var jsonF = root.folder(mainFolderName + '_metadata');
+        isCollageRunning = true;
+        showLoading("Building package...", true);
+
+        if (currentMode === 'opensea') {
+            var total = userLimit || osAllItems.length;
+            var realCount = osAllItems.length;
+
+            var osMetaCache = osAllItems.map(function(item) {
+                return {
+                    description: item.description || '',
+                    image: item.originalImageUrl || item.imageUrl || '',
+                    tokenUri: item.tokenUri || '',
+                    attributes: item.attributes || []
+                };
+            });
+
+            showLoading('Building metadata: 0/' + total + '...', true);
+            var batchSize = 500;
+            for (var i = 0; i < total; i += batchSize) {
+                if (!isCollageRunning) break;
+                var end = Math.min(i + batchSize, total);
+                for (var j = i; j < end; j++) {
+                    var id = j + 1;
+                    var src;
+                    if (j < realCount) {
+                        src = osMetaCache[j];
+                    } else {
+                        src = osMetaCache[Math.floor(Math.random() * realCount)];
+                    }
+                    var meta = {
+                        name: mainFolderName + ' #' + id,
+                        description: currentDesc || src.description,
+                        image: src.image,
+                        tokenUri: src.tokenUri,
+                        tokenId: String(id)
+                    };
+                    if (src.attributes && src.attributes.length) meta.attributes = src.attributes;
+                    jsonF.file(id + '.json', JSON.stringify(meta, null, 2));
+                }
+                showLoading('Building metadata: ' + end + '/' + total + '...', true);
+            }
+            addLog('Metadata: ' + total + ' files created' + (total > realCount ? ' (' + realCount + ' real + ' + (total - realCount) + ' randomized)' : ''));
+
+            showLoading('Downloading 10 sample images...', true);
+            var sampleCount = Math.min(10, realCount);
+            var imgOk = 0;
+
+            async function fetchImageWithFallback(url) {
+                var pngUrl = toPng(url);
+                var attempts = [
+                    pngUrl,
+                    PROXY + encodeURIComponent(pngUrl),
+                    'https://api.allorigins.win/raw?url=' + encodeURIComponent(pngUrl)
+                ];
+                for (var a = 0; a < attempts.length; a++) {
+                    try {
+                        var r = await fetch(attempts[a]);
+                        if (r.ok) {
+                            var blob = await r.blob();
+                            if (blob.size > 100) return blob;
+                        }
+                    } catch(e) {}
+                }
+                return null;
+            }
+
+            await Promise.all(Array.from({length: sampleCount}, function(_, k) { return k; }).map(async function(k) {
+                if (!isCollageRunning) return;
+                var item = osAllItems[k];
+                if (!item || !item.imageUrl) return;
+                var imgBlob = await fetchImageWithFallback(item.imageUrl);
+                if (imgBlob) {
+                    imgF.file((k + 1) + '.png', imgBlob);
+                    imgOk++;
+                    addLog('Image ' + (k + 1) + ': ✅ ' + (imgBlob.size / 1024).toFixed(0) + 'KB');
+                } else {
+                    addLog('Image ' + (k + 1) + ': ❌ failed');
+                }
+            }));
+            addLog('Sample images: ' + imgOk + '/' + sampleCount + ' downloaded');
+
+        } else {
+            var imgIndices = [];
+            for (var i = 1; i <= 10; i++) imgIndices.push(i);
+            await Promise.all(imgIndices.map(async function(i) {
+                var imgData = await fetchImageBlob(i);
+                if (imgData) imgF.file(i + '.png', imgData.blob);
+            }));
+
+            metaCache = [];
+            var batchSize = 500;
+            for (var i = 1; i <= userLimit; i += batchSize) {
+                if (!isCollageRunning) break;
+                var currentBatch = [];
+                for (var k = 0; k < Math.min(batchSize, userLimit - i + 1); k++) currentBatch.push(i + k);
+                await Promise.all(currentBatch.map(async function(id) {
+                    var meta;
+                    if (id <= contractCollectionSize) {
+                        meta = await fetchWithInfiniteRetry(jsonCID, id);
+                        if (meta && metaCache.length < 500) metaCache.push(JSON.stringify(meta));
+                    } else if (metaCache.length > 0) {
+                        meta = JSON.parse(metaCache[Math.floor(Math.random() * metaCache.length)]);
+                    }
+                    if (meta && isCollageRunning) {
+                        meta.name = mainFolderName + ' #' + id;
+                        meta.description = currentDesc;
+                        if (meta.compiler) delete meta.compiler;
+                        jsonF.file(id + '.json', JSON.stringify(meta, null, 2));
+                    }
+                }));
+                showLoading('Turbo Progress: ' + Math.min(i + batchSize - 1, userLimit) + '/' + userLimit + '...', true);
+            }
+        }
+
+        var canvas = document.getElementById('collageCanvas');
+        if (canvas.width > 0) {
+            try { imgF.file("Full_Collage.jpg", canvas.toDataURL("image/jpeg", 0.9).split(',')[1], {base64: true}); }
+            catch(e) { addLog('ℹ Collage skipped in ZIP (CORS).'); }
+        }
+
+        if (isCollageRunning) {
+            showLoading("Generating ZIP...");
+            var blob = await zip.generateAsync({type: "blob"});
+            triggerDownload(blob, mainFolderName + '_Package.zip');
+            addLog('✅ Download started! ' + (blob.size / 1048576).toFixed(2) + ' MB');
+        }
+        isCollageRunning = false; hideLoading();
+    }
+</script>
+</body>
+</html>
