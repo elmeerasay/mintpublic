@@ -2,1033 +2,142 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MINT PUBLIC OS</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Share+Tech+Mono&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #0f172a; color: #fff; min-height: 100vh; overflow-x: hidden; }
-
-        /* NAV */
-        .nav-bar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 0 10px;
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
         }
-        .nav-inner { display: flex; align-items: center; max-width: 1200px; margin: 0 auto; height: 56px; gap: 6px; overflow-x: auto; }
-        .nav-inner::-webkit-scrollbar { display: none; }
-        .nav-brand { font-weight: 800; font-size: 14px; background: linear-gradient(90deg, #7c3aed, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; margin-right: 10px; }
-        .nav-btn {
-            padding: 8px 14px; border-radius: 8px; border: 1px solid transparent;
-            background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 12px; font-weight: 600;
-            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
         }
-        .nav-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
-        .nav-btn.active { background: linear-gradient(135deg, #7c3aed, #06b6d4); color: #fff; border-color: transparent; }
-
-        /* PAGES */
-        .page { display: none; padding: 70px 15px 30px; min-height: 100vh; }
-        .page.active { display: block; }
-
-        /* === MINT PAGE === */
-        #page-mint { display: flex; align-items: center; justify-content: center; }
-        .mint-wrap { background: rgba(0,0,0,0.26); padding: 24px; border-radius: 12px; width: 100%; max-width: 440px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
-        .mint-wrap h2 { margin: 0 0 16px 0; font-size: 20px; text-align: center; background: linear-gradient(90deg, #7c3aed, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .mint-wrap label { font-size: 11px; opacity: 0.95; display: block; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; }
-        .mint-wrap input, .mint-wrap select {
-            width: 100%; padding: 9px 10px; margin: 0 0 12px 0; border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
-            color: #fff; font-size: 14px; box-sizing: border-box;
+        .logo {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #7c3aed, #06b6d4, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
-        .mint-wrap select option { background-color: #0f172a; color: #fff; }
-        .mint-row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .mint-row > * { flex: 1; }
-        .mint-actions { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 10px; }
-        .mint-actions > button { flex: 1; padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 11px; background: #334155; color: #e2e8f0; }
-        .mint-actions > button:hover:not([disabled]) { background: #475569; }
-        .mint-controls { display: flex; gap: 8px; margin-top: 6px; }
-        .mint-controls > button { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; }
-        #mintBtn { background: linear-gradient(90deg, #7c3aed, #06b6d4); color: #fff; }
-        #stopBtn { background: #ff4444; color: #fff; }
-        .mint-log { margin-top: 14px; height: 220px; overflow: auto; background: rgba(0,0,0,0.36); padding: 10px; border-radius: 8px; font-size: 12px; color: #e6fffb; }
-        .log-success { color: #00ff88; }
-        .log-error { color: #ffaaaa; }
-        .log-info { color: #c2f3ff; }
-        a.tx-link { color: #80ffea; text-decoration: none; }
-        button[disabled] { opacity: 0.6; cursor: not-allowed; }
+        .subtitle {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(124, 58, 237, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+        }
+        .menu-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .menu-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .menu-desc {
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.3;
+        }
+        .menu-item.mint { border-color: rgba(124,58,237,0.3); }
+        .menu-item.mint:hover { border-color: #7c3aed; box-shadow: 0 10px 30px rgba(124,58,237,0.3); }
+        .menu-item.deploy { border-color: rgba(59,130,246,0.3); }
+        .menu-item.deploy:hover { border-color: #3b82f6; box-shadow: 0 10px 30px rgba(59,130,246,0.3); }
+        .menu-item.dot { border-color: rgba(6,182,212,0.3); }
+        .menu-item.dot:hover { border-color: #06b6d4; box-shadow: 0 10px 30px rgba(6,182,212,0.3); }
+        .menu-item.studio { border-color: rgba(168,85,247,0.3); }
+        .menu-item.studio:hover { border-color: #a855f7; box-shadow: 0 10px 30px rgba(168,85,247,0.3); }
+        .menu-item.ai { border-color: rgba(16,185,129,0.3); }
+        .menu-item.ai:hover { border-color: #10b981; box-shadow: 0 10px 30px rgba(16,185,129,0.3); }
+        .menu-item.mail { border-color: rgba(234,179,8,0.3); }
+        .menu-item.mail:hover { border-color: #eab308; box-shadow: 0 10px 30px rgba(234,179,8,0.3); }
 
-        /* === DEPLOY PAGE === */
-        #page-deploy { padding-top: 70px; }
-        .deploy-container { max-width: 1100px; margin: 0 auto; }
-        .deploy-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-        @media (max-width: 900px) { .deploy-grid { grid-template-columns: 1fr; } }
-        .deploy-panel { background: rgba(30,41,59,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px; }
-        .deploy-panel h3 { font-size: 12px; text-transform: uppercase; color: #64748b; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
-        .deploy-panel input, .deploy-panel select { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 13px; outline: none; margin-bottom: 10px; }
-        .deploy-panel button { width: 100%; padding: 10px; border-radius: 10px; border: none; font-weight: 700; font-size: 12px; cursor: pointer; margin-bottom: 8px; }
-        .deploy-terminal { background: #0a0f18; border: 1px solid #334155; border-radius: 16px; padding: 16px; margin-top: 20px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #cbd5e1; }
+        .menu-item.full-width {
+            grid-column: 1 / -1;
+        }
 
-        /* === DOT PAGE === */
-        #page-dot { display: flex; align-items: flex-start; justify-content: center; }
-        .dot-container { font-family: 'Share Tech Mono', monospace; background: #1a0b2e; width: 100%; max-width: 500px; padding: 20px; border: 2px solid #00ffff; position: relative; margin-top: 10px; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
-        .dot-container::before { content: ''; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px; border-top: 4px solid #ff00ff; border-left: 4px solid #ff00ff; }
-        .dot-container::after { content: ''; position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; border-bottom: 4px solid #ff00ff; border-right: 4px solid #ff00ff; }
-        .dot-container h2 { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; color: #00ffff; text-shadow: 0 0 8px rgba(0, 255, 255, 0.6); margin-bottom: 5px; text-align: center; }
-        .dot-container .subtitle { color: #ff00ff; text-align: center; font-size: 0.85rem; margin-bottom: 20px; text-transform: uppercase; }
-        .dot-container input { width: 100%; padding: 14px; background: #000; border: 1px solid #00ffff; color: #00ffff; font-family: inherit; font-size: 1rem; outline: none; margin-bottom: 12px; }
-        .dot-container .btn-execute { width: 100%; padding: 14px; border: none; background: #fcee0a; color: #000; font-family: 'Orbitron', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-        .dot-result { display: none; flex-direction: column; gap: 10px; margin-top: 15px; border-top: 1px dashed #ff00ff; padding-top: 15px; }
-        .dot-status-bar { display: flex; justify-content: space-between; font-size: 0.85rem; color: #fcee0a; }
-        .dot-email-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
-        .dot-email-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 255, 0.05); border: 1px solid #00ffff; padding: 10px; }
-        .dot-email-item span { font-size: 0.85rem; word-break: break-all; margin-right: 8px; }
-        .dot-email-item button { background: #ff00ff; color: #fff; border: none; padding: 6px 10px; font-size: 0.75rem; cursor: pointer; font-family: inherit; white-space: nowrap; }
-        .dot-email-item button.copied { background: #39ff14; color: #000; }
-        .dot-pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-        .dot-pagination button { flex: 1; padding: 8px; background: transparent; border: 1px solid #00ffff; color: #00ffff; font-size: 0.75rem; cursor: pointer; font-family: 'Orbitron', sans-serif; }
-        .dot-pagination button:disabled { border-color: #333; color: #555; cursor: not-allowed; }
-        .dot-page-info { font-family: 'Orbitron', sans-serif; color: #ff00ff; font-size: 0.8rem; text-align: center; flex: 1; }
-
-        /* === STUDIO PAGE === */
-        #page-studio { display: flex; align-items: flex-start; justify-content: center; }
-        .studio-card { width: 100%; max-width: 550px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); border-radius: 24px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .studio-card h2 { text-align: center; background: linear-gradient(to right, #d8b4fe, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 20px 0; }
-        .studio-card label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-        .studio-card input, .studio-card select, .studio-card textarea { width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: white; outline: none; box-sizing: border-box; font-size: 13px; margin-bottom: 12px; }
-        .studio-card textarea { height: 60px; resize: none; }
-        .studio-card button { width: 100%; padding: 12px; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 12px; margin-top: 8px; }
-        .studio-tabs { display: flex; gap: 6px; margin-bottom: 15px; }
-        .studio-tab { flex: 1; padding: 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
-        .studio-tab.active { background: #a855f7; color: white; border-color: #a855f7; }
-        .studio-log { margin-top: 15px; padding: 12px; background: #000; border-radius: 12px; border: 1px solid #334155; max-height: 120px; overflow-y: auto; font-family: monospace; font-size: 11px; color: #cbd5e1; }
-
-        /* === AI PAGE === */
-        #page-ai { padding-top: 56px; height: 100vh; display: flex; flex-direction: column; }
-        .ai-app { flex: 1; display: flex; flex-direction: column; max-width: 850px; width: 100%; margin: 0 auto; position: relative; overflow: hidden; }
-        .ai-chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .ai-welcome { text-align: center; margin-top: 30%; color: #64748b; }
-        .ai-user-msg { align-self: flex-end; max-width: 80%; background: #334155; padding: 12px 16px; border-radius: 18px 18px 4px 18px; font-size: 14px; }
-        .ai-bot-msg { align-self: flex-start; width: 100%; font-size: 14px; line-height: 1.6; }
-        .ai-bot-msg pre { background: #000 !important; border-radius: 6px; margin: 10px 0; border: 1px solid #1e293b; position: relative; overflow-x: auto; }
-        .ai-bot-msg code { font-family: monospace; font-size: 12px; display: block; padding: 12px !important; }
-        .ai-input-area { padding: 10px 15px 20px; display: flex; gap: 10px; align-items: center; }
-        .ai-input-area input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 25px; padding: 14px 20px; color: #fff; outline: none; font-size: 14px; }
-        .ai-input-area button { background: linear-gradient(135deg, #7c3aed, #06b6d4); border: none; width: 46px; height: 46px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .ai-input-area button svg { width: 20px; height: 20px; fill: #fff; }
-        .ai-settings { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; margin: 0 15px 10px; display: none; }
-        .ai-settings.show { display: block; }
-        .ai-settings label { font-size: 11px; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .ai-settings input, .ai-settings select { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 12px; outline: none; margin-bottom: 8px; }
-        .ai-settings button { background: #7c3aed; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; }
-        .ai-toggle-settings { background: none; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; color: #94a3b8; font-size: 11px; cursor: pointer; margin: 0 15px 8px; }
-
-        /* === MAIL PAGE === */
-        #page-mail { display: flex; align-items: flex-start; justify-content: center; }
-        .mail-card { background: #1e293b; width: 100%; max-width: 500px; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
-        .mail-card h2 { margin: 0 0 15px 0; font-size: 1rem; text-align: center; color: #94a3b8; text-transform: uppercase; }
-        .mail-input-group { display: flex; gap: 5px; margin-bottom: 8px; }
-        .mail-card input { flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; font-size: 0.9rem; outline: none; background: #0f172a; color: #fff; }
-        .mail-actions { display: flex; gap: 6px; margin-bottom: 15px; }
-        .mail-btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.8rem; flex: 1; }
-        .mail-btn-primary { background: #2563eb; color: white; }
-        .mail-btn-outline { background: #334155; color: #e2e8f0; }
-        .mail-inbox-header { border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; font-weight: bold; font-size: 0.85rem; display: flex; justify-content: space-between; }
-        .mail-msg-card { border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #0f172a; }
-        .mail-msg-meta { font-size: 0.7rem; margin-bottom: 8px; border-bottom: 1px dashed #334155; padding-bottom: 5px; color: #94a3b8; }
-        .mail-msg-body { font-size: 0.85rem; color: #e2e8f0; line-height: 1.4; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; }
-        .mail-otp { font-weight: 800; color: #e11d48; background: rgba(225,29,72,0.1); padding: 2px 4px; border-radius: 4px; }
-        .mail-empty { text-align: center; color: #64748b; padding: 40px 0; font-size: 0.8rem; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .footer {
+            margin-top: 30px;
+            font-size: 11px;
+            color: #475569;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="logo">MINT PUBLIC OS</div>
+        <p class="subtitle">Multi-Chain Tools Dashboard</p>
 
-<!-- NAVIGATION -->
-<div class="nav-bar">
-    <div class="nav-inner">
-        <span class="nav-brand">MINT PUBLIC OS</span>
-        <button class="nav-btn active" onclick="showPage('mint')">Mint</button>
-        <button class="nav-btn" onclick="showPage('deploy')">Deploy</button>
-        <button class="nav-btn" onclick="showPage('dot')">Dot Gmail</button>
-        <button class="nav-btn" onclick="showPage('studio')">Studio</button>
-        <button class="nav-btn" onclick="showPage('ai')">AI Chat</button>
-        <button class="nav-btn" onclick="showPage('mail')">Temp Mail</button>
+        <div class="menu-grid">
+            <a href="mint.html" class="menu-item mint">
+                <div class="menu-icon">⛏️</div>
+                <div class="menu-title">Mint</div>
+                <div class="menu-desc">Loop Mint Multi-Chain</div>
+            </a>
+            <a href="deploy.html" class="menu-item deploy">
+                <div class="menu-icon">🚀</div>
+                <div class="menu-title">Deploy</div>
+                <div class="menu-desc">Factory Manager Pro</div>
+            </a>
+            <a href="dot.html" class="menu-item dot">
+                <div class="menu-icon">📧</div>
+                <div class="menu-title">Dot Gmail</div>
+                <div class="menu-desc">Email Variant Generator</div>
+            </a>
+            <a href="studio.html" class="menu-item studio">
+                <div class="menu-icon">🎨</div>
+                <div class="menu-title">Studio</div>
+                <div class="menu-desc">NFT Studio Pro</div>
+            </a>
+            <a href="ai.html" class="menu-item ai">
+                <div class="menu-icon">🤖</div>
+                <div class="menu-title">AI Chat</div>
+                <div class="menu-desc">Multi-Provider AI</div>
+            </a>
+            <a href="mail.html" class="menu-item mail">
+                <div class="menu-icon">📬</div>
+                <div class="menu-title">Temp Mail</div>
+                <div class="menu-desc">Disposable Email</div>
+            </a>
+        </div>
+
+        <p class="footer">MINT PUBLIC OS v1.0</p>
     </div>
-</div>
-
-<!-- ==================== PAGE: MINT ==================== -->
-<div id="page-mint" class="page active">
-    <div class="mint-wrap">
-        <h2>MINT MULTI-CHAIN</h2>
-        <label>Privatekey</label>
-        <input id="mint-pk" type="password" placeholder="0x..." />
-        <label>Kontrak NFT</label>
-        <input id="mint-nft" type="text" placeholder="0x..." />
-        <label>Jaringan</label>
-        <select id="mint-network">
-            <option value="monad">Monad</option>
-            <option value="ethereum">Ethereum Mainnet</option>
-            <option value="apechain">Apechain</option>
-            <option value="animechain">Animechain</option>
-            <option value="base">Base</option>
-        </select>
-        <div class="mint-row">
-            <div><label>Delay (detik)</label><input id="mint-delay" type="number" min="0" value="0" /></div>
-            <div><label>Max Loop</label><input id="mint-maxloops" type="number" min="0" value="0" /></div>
-        </div>
-        <div class="mint-row">
-            <div style="flex:0 0 100%;"><label>Jumlah Wallet</label><input id="mint-clonecount" type="number" min="1" value="100" /></div>
-        </div>
-        <div class="mint-actions">
-            <button id="mint-checkbal">Cek Balance</button>
-            <button id="mint-estimate">Get Estimasi</button>
-            <button id="mint-clearlog">Clear Log</button>
-        </div>
-        <div class="mint-controls">
-            <button id="mintBtn">Mulai Loop Mint</button>
-            <button id="stopBtn">Stop</button>
-        </div>
-        <div id="mint-log" class="mint-log"></div>
-    </div>
-</div>
-
-<!-- ==================== PAGE: DEPLOY ==================== -->
-<div id="page-deploy" class="page">
-    <div class="deploy-container">
-        <div style="text-align:center; margin-bottom:20px;">
-            <h1 style="font-size:24px; background: linear-gradient(90deg, #3b82f6, #a855f7); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Factory Manager Pro</h1>
-            <p style="color:#64748b; font-size:12px;">Automated Deployment & Batch Minting</p>
-            <div id="deploy-wallet-display" style="display:none; margin-top:10px;">
-                <span id="deploy-addr" style="color:#3b82f6; font-size:11px; background:rgba(59,130,246,0.1); padding:4px 10px; border-radius:20px;">0x...</span>
-                <span id="deploy-balance" style="font-size:16px; font-weight:bold; margin-left:10px;">0 ETH</span>
-            </div>
-        </div>
-        <div class="deploy-grid">
-            <!-- Col 1: Network & Auth -->
-            <div class="deploy-panel">
-                <h3>Network & Auth</h3>
-                <label style="font-size:11px; color:#64748b;">Pilih Jaringan</label>
-                <select id="deploy-networkSelect">
-                    <option value="4326|MEGA ETH|https://lb.drpc.live/megaeth/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">MEGA ETH (4326)</option>
-                    <option value="1|ETHEREUM|https://lb.drpc.live/ethereum/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">ETHEREUM MAINNET (1)</option>
-                    <option value="8453|BASE|https://lb.drpc.live/base/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">BASECHAIN (8453)</option>
-                    <option value="33139|APECHAIN|https://lb.drpc.live/apechain/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">APECHAIN (33139)</option>
-                    <option value="143|MONAD|https://lb.drpc.live/monad-mainnet/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">MONAD (143)</option>
-                    <option value="42161|ARBITRUM|https://arbitrum.drpc.org" selected>ARBITRUM (42161)</option>
-                    <option value="69000|ANIMECHAIN|https://rpc-animechain-39xf6m45e3.t.conduit.xyz/">ANIMECHAIN (69000)</option>
-                    <option value="manual">INPUT MANUAL</option>
-                </select>
-                <div id="deploy-manualFields" style="display:none;">
-                    <input type="text" id="deploy-manualRpc" placeholder="RPC URL">
-                    <input type="number" id="deploy-manualChainId" placeholder="Chain ID">
-                    <input type="text" id="deploy-manualNetName" placeholder="Network Name">
-                </div>
-                <label style="font-size:11px; color:#64748b;">Private Key</label>
-                <input type="password" id="deploy-pk" placeholder="0x...">
-                <div style="margin-bottom:10px;">
-                    <label style="font-size:11px; color:#64748b;">Gas Mode</label>
-                    <div style="display:flex; gap:12px; padding:8px; background:#0f172a; border-radius:8px; border:1px solid #334155;">
-                        <label style="font-size:11px; cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="radio" name="deploy-gasMode" value="auto" checked> Auto</label>
-                        <label style="font-size:11px; cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="radio" name="deploy-gasMode" value="legacy"> Legacy</label>
-                    </div>
-                </div>
-                <button onclick="deployUpdateWallet()" style="background:#4f46e5; color:#fff; border-radius:10px;">Cek Balance</button>
-                <div style="margin-top:15px;">
-                    <span style="font-size:10px; color:#64748b;">Receiver Address</span>
-                    <input type="text" id="deploy-receiverAddr" placeholder="Not Deployed">
-                    <span style="font-size:10px; color:#64748b;">Factory Address</span>
-                    <input type="text" id="deploy-factoryAddr" placeholder="Not Deployed">
-                </div>
-            </div>
-            <!-- Col 2: Actions -->
-            <div class="deploy-panel">
-                <h3>Deployment</h3>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px;">
-                    <button onclick="deployContract('Receiver')" style="background:#3b82f6; color:#fff; border-radius:10px;">Deploy Receiver</button>
-                    <button onclick="deployContract('Factory')" style="background:#7c3aed; color:#fff; border-radius:10px;">Deploy Factory</button>
-                </div>
-                <h3>Batch Minting</h3>
-                <input type="number" id="deploy-cloneCount" placeholder="Jumlah Clone (Max 100)">
-                <input type="text" id="deploy-nftAddress" placeholder="Target NFT Contract">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                    <button onclick="deployDryRun()" style="background:#ca8a04; color:#fff; border-radius:10px;">Dry Run</button>
-                    <button onclick="deployExecuteBatch()" style="background:#16a34a; color:#fff; border-radius:10px;">Execute Batch</button>
-                </div>
-                <h3 style="margin-top:15px;">Whitelist</h3>
-                <input type="text" id="deploy-wlInput" placeholder="Address or Price (ETH)">
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
-                    <button onclick="deployManageWL('add')" style="background:#475569; color:#fff; border-radius:8px; font-size:10px;">ADD WL</button>
-                    <button onclick="deployManageWL('delete')" style="background:#475569; color:#fff; border-radius:8px; font-size:10px;">DEL WL</button>
-                    <button onclick="deployManageWL('setPrice')" style="background:#475569; color:#fff; border-radius:8px; font-size:10px;">SET PRICE</button>
-                </div>
-            </div>
-            <!-- Col 3: Terminal -->
-            <div class="deploy-panel" style="display:flex; flex-direction:column;">
-                <h3>System Log</h3>
-                <div style="display:flex; justify-content:flex-end; margin-bottom:8px;"><button onclick="deployClearLog()" style="background:#334155; color:#94a3b8; border-radius:6px; font-size:10px; padding:4px 10px;">CLEAR</button></div>
-                <div id="deploy-log" class="deploy-terminal" style="flex:1;">
-                    <div style="color:#3b82f6;">$ Ready for connection.</div>
-                </div>
-                <div id="deploy-loader" style="display:none; text-align:center; padding:10px; color:#3b82f6; font-size:11px;">Awaiting Transaction...</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ==================== PAGE: DOT ==================== -->
-<div id="page-dot" class="page">
-    <div class="dot-container">
-        <h2>SYS.DOT // GMAIL</h2>
-        <p class="subtitle">Multi-Variant Email Generator</p>
-        <input type="text" id="dot-input" placeholder="Enter target (ex: neo@gmail.com)" autocomplete="off">
-        <button class="btn-execute" onclick="dotGenerate()">[ EXECUTE ]</button>
-        <div class="dot-result" id="dot-result">
-            <div class="dot-status-bar">
-                <span id="dot-total">TOTAL: 0</span>
-                <span style="color:#39ff14;" id="dot-copied">COPIED: 0</span>
-            </div>
-            <div class="dot-email-list" id="dot-list"></div>
-            <div class="dot-pagination">
-                <button id="dot-prev" onclick="dotChangePage(-1)">PREV</button>
-                <div class="dot-page-info" id="dot-pageinfo">PG 1/1</div>
-                <button id="dot-next" onclick="dotChangePage(1)">NEXT</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ==================== PAGE: STUDIO ==================== -->
-<div id="page-studio" class="page">
-    <div class="studio-card">
-        <h2>NFT Studio Pro</h2>
-        <div class="studio-tabs">
-            <div class="studio-tab active" id="studio-tab-rpc" onclick="studioSwitchMode('rpc')">RPC / Contract</div>
-            <div class="studio-tab" id="studio-tab-opensea" onclick="studioSwitchMode('opensea')">OpenSea</div>
-        </div>
-        <div id="studio-mode-rpc">
-            <label>Network</label>
-            <select id="studio-network" onchange="studioToggleManualRpc()">
-                <option value="https://lb.drpc.live/polygon/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">Polygon</option>
-                <option value="https://lb.drpc.live/apechain/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">ApeChain</option>
-                <option value="https://lb.drpc.live/base/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4">Base</option>
-                <option value="manual">Manual RPC</option>
-            </select>
-            <input type="text" id="studio-manual-rpc" placeholder="https://your-rpc-url.com" style="display:none;">
-            <label>Contract Address</label>
-            <input type="text" id="studio-address" placeholder="0x...">
-            <button onclick="studioFetchNFT()" style="background:#a855f7;">Fetch NFT Details</button>
-        </div>
-        <div id="studio-mode-opensea" style="display:none;">
-            <label>OpenSea Collection</label>
-            <input type="text" id="studio-opensea-url" placeholder="Paste URL or slug">
-            <button onclick="studioFetchOpenSea()" style="background:linear-gradient(to right, #2081e2, #6366f1);">Fetch from OpenSea</button>
-        </div>
-        <div id="studio-info" style="display:none; margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:15px; text-align:center;">
-                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px;"><span style="font-size:10px; color:#64748b;">Name</span><br><strong id="studio-name">-</strong></div>
-                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px;"><span style="font-size:10px; color:#64748b;">Symbol</span><br><strong id="studio-symbol">-</strong></div>
-                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px;"><span style="font-size:10px; color:#64748b;">Supply</span><br><strong id="studio-supply">-</strong></div>
-            </div>
-            <label>Collection Size</label>
-            <input type="number" id="studio-limit" placeholder="150">
-            <label>Nama Koleksi</label>
-            <input type="text" id="studio-edit-name" placeholder="Collection name">
-            <label>Deskripsi</label>
-            <textarea id="studio-edit-desc" placeholder="Description..."></textarea>
-            <label>Collage Grid</label>
-            <select id="studio-gridType">
-                <option value="5,3">Grid 5x3 (15)</option>
-                <option value="5,5">Grid 5x5 (25)</option>
-                <option value="10,5">Grid 10x5 (50)</option>
-                <option value="10,10">Grid 10x10 (100)</option>
-            </select>
-            <button onclick="studioGenerateCollage()" style="background:#6366f1;">Generate Collage Preview</button>
-            <img id="studio-collage-img" style="width:100%; border-radius:12px; margin-top:12px; display:none; border:2px solid #6366f1;">
-            <button onclick="studioDownloadZip()" style="background:linear-gradient(to right, #10b981, #6366f1); margin-top:10px;">Download Package (.ZIP)</button>
-        </div>
-        <div id="studio-loading" style="display:none; text-align:center; margin-top:15px; padding:15px; background:rgba(168,85,247,0.1); border-radius:12px; border:1px dashed #a855f7;">
-            <div style="width:25px; height:25px; border:3px solid rgba(255,255,255,0.1); border-top:3px solid #ec4899; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 8px;"></div>
-            <span id="studio-loading-text" style="font-size:12px; color:#a855f7; font-weight:bold;">Processing...</span>
-        </div>
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <label style="margin:0;">Activity Log</label>
-                <button onclick="studioClearLog()" style="background:#334155; font-size:10px; padding:4px 10px; width:auto; margin:0; border-radius:6px;">Clear</button>
-            </div>
-            <div id="studio-log" class="studio-log">> System Ready.</div>
-        </div>
-    </div>
-    <canvas id="studioCollageCanvas" style="display:none;"></canvas>
-</div>
-
-<!-- ==================== PAGE: AI ==================== -->
-<div id="page-ai" class="page">
-    <div class="ai-app">
-        <button class="ai-toggle-settings" onclick="document.getElementById('ai-settings').classList.toggle('show')">Settings</button>
-        <div id="ai-settings" class="ai-settings">
-            <label>API Key</label>
-            <input type="password" id="ai-key" placeholder="Your API key...">
-            <label>Endpoint</label>
-            <select id="ai-url">
-                <option value="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions">Google Gemini</option>
-                <option value="https://api.anthropic.com/v1/messages">Anthropic Claude</option>
-                <option value="https://api.openai.com/v1/chat/completions">OpenAI GPT</option>
-                <option value="https://api.groq.com/openai/v1/chat/completions">Groq Cloud</option>
-                <option value="https://api.deepseek.com/chat/completions">DeepSeek</option>
-                <option value="https://openrouter.ai/api/v1/chat/completions">OpenRouter</option>
-            </select>
-            <label>Model</label>
-            <select id="ai-model">
-                <optgroup label="Gemini">
-                    <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro</option>
-                    <option value="gemini-2.5-flash-preview-04-17">Gemini 2.5 Flash</option>
-                    <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash</option>
-                </optgroup>
-                <optgroup label="Claude">
-                    <option value="claude-opus-4-6">Claude Opus 4.6</option>
-                    <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
-                </optgroup>
-                <optgroup label="GPT">
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="gpt-4o-mini">GPT-4o Mini</option>
-                </optgroup>
-                <optgroup label="Groq">
-                    <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-                </optgroup>
-                <optgroup label="DeepSeek">
-                    <option value="deepseek-chat">DeepSeek V3</option>
-                    <option value="deepseek-reasoner">DeepSeek R1</option>
-                </optgroup>
-            </select>
-            <button onclick="aiSaveSettings()">Simpan</button>
-        </div>
-        <div id="ai-chat" class="ai-chat-window">
-            <div class="ai-welcome"><h2 style="color:#64748b;">Mau tanya apa?</h2></div>
-        </div>
-        <div class="ai-input-area">
-            <input type="text" id="ai-inp" placeholder="Ketik pesan..." onkeypress="if(event.key==='Enter')aiSend()">
-            <button onclick="aiSend()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg></button>
-        </div>
-    </div>
-</div>
-
-<!-- ==================== PAGE: MAIL ==================== -->
-<div id="page-mail" class="page">
-    <div class="mail-card">
-        <h2>Temp Mail</h2>
-        <div class="mail-input-group">
-            <input type="text" id="mail-email" placeholder="Alamat email...">
-            <button class="mail-btn mail-btn-outline" style="width:50px; flex:none;" onclick="mailCopy()">📋</button>
-        </div>
-        <div class="mail-actions">
-            <button class="mail-btn mail-btn-primary" onclick="mailGenerate()">Generate Baru</button>
-            <button class="mail-btn mail-btn-outline" onclick="mailCheck()">Cek Inbox</button>
-        </div>
-        <div class="mail-inbox-header">
-            <span>Kotak Masuk</span>
-            <span id="mail-status" style="font-weight:normal; font-size:0.7rem; color:#64748b;">Standby</span>
-        </div>
-        <div id="mail-inbox"><div class="mail-empty">Belum ada email.</div></div>
-    </div>
-</div>
-
-<script>
-// ===== NAVIGATION =====
-function showPage(name) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + name).classList.add('active');
-    event.target.classList.add('active');
-}
-
-// ===== MINT MODULE =====
-(function() {
-    const MINT_HELPER = "0x00005EA00Ac477B1030CE78506496e8C2dE24bf5";
-    const FACTORY_ABI = ["function createAndMintBatch(address mintHelper,address nftContract,address feeRecipient,address mainWallet,uint256 amount,uint256 count) payable returns (bool)"];
-    const GAS_BUFFER = 10;
-    const CONFIG = {
-        monad: { name:"Monad", rpcUrl:"https://rpc4.monad.xyz", factoryAddr:"0x443323a68F170C3358fA5168bf948a00F0da49c9", feeRecipient:"0x0000a26b00c1F0DF003000390027140000fAa719", explorerPrefix:"https://monadscan.com/tx/", nativeToken:"MONAD" },
-        ethereum: { name:"Ethereum", rpcUrl:"https://lb.drpc.live/ethereum/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4", factoryAddr:"0x44E3990621738751e6a352dBB149aD6Ed03ef53d", feeRecipient:"0x0000a26b00c1F0DF003000390027140000fAa719", explorerPrefix:"https://etherscan.io/tx/", nativeToken:"ETH" },
-        apechain: { name:"Apechain", rpcUrl:"https://rpc.apechain.com/http", factoryAddr:"0x246fD3c3Fc51dD0e6F11FB873Fd5D07Ff03a376A", feeRecipient:"0x0000a26b00c1F0DF003000390027140000fAa719", explorerPrefix:"https://apescan.io/tx/", nativeToken:"APE" },
-        animechain: { name:"Animechain", rpcUrl:"https://rpc-animechain-39xf6m45e3.t.conduit.xyz/", factoryAddr:"0xA2ead8857987D26704eFcbbc91eFb2aCDFf90246", feeRecipient:"0x0000a26b00c1F0DF003000390027140000fAa719", explorerPrefix:"https://explorer.anime.xyz/tx/", nativeToken:"ANIME" },
-        base: { name:"Base", rpcUrl:"https://mainnet.base.org/", factoryAddr:"0x4fb4f576eAc4Fc4828F765965E8CE5875ED63809", feeRecipient:"0x0000a26b00c1F0DF003000390027140000fAa719", explorerPrefix:"https://basescan.org/tx/", nativeToken:"ETH" }
-    };
-
-    let provider=null, wallet=null, running=false, loopCount=0, maxLoops=0;
-    let currentConfig = CONFIG['monad'];
-    const iface = new ethers.utils.Interface(FACTORY_ABI);
-
-    function mlog(text, cls="log-info") {
-        const el = document.createElement("div");
-        el.className = cls;
-        el.innerHTML = `[${new Date().toLocaleTimeString()}] ${text}`;
-        document.getElementById("mint-log").prepend(el);
-    }
-
-    document.getElementById("mint-network").addEventListener("change", e => {
-        currentConfig = CONFIG[e.target.value];
-        provider = null; wallet = null;
-        mlog(`Jaringan: ${currentConfig.name}`, "log-info");
-    });
-
-    function getWP() {
-        const pk = document.getElementById("mint-pk").value.trim();
-        const nft = document.getElementById("mint-nft").value.trim();
-        if (!pk || !pk.startsWith("0x")) { mlog("Private key tidak valid.", "log-error"); return null; }
-        if (!nft || !ethers.utils.isAddress(nft)) { mlog("Kontrak NFT tidak valid.", "log-error"); return null; }
-        try {
-            if (!provider) provider = new ethers.providers.JsonRpcProvider(currentConfig.rpcUrl);
-            wallet = new ethers.Wallet(pk, provider);
-            return { provider, wallet };
-        } catch(e) { mlog("Error: " + e.message, "log-error"); return null; }
-    }
-
-    document.getElementById("mint-checkbal").onclick = async () => {
-        const ctx = getWP(); if (!ctx) return;
-        mlog("Memeriksa saldo...", "log-info");
-        try {
-            const addr = await ctx.wallet.getAddress();
-            const bal = await ctx.provider.getBalance(addr);
-            mlog(`${addr}`, "log-success");
-            mlog(`${ethers.utils.formatEther(bal)} ${currentConfig.nativeToken}`, "log-success");
-        } catch(e) { mlog("Error: " + e.message, "log-error"); }
-    };
-
-    document.getElementById("mint-estimate").onclick = async () => {
-        const ctx = getWP(); if (!ctx) return;
-        const nft = document.getElementById("mint-nft").value.trim();
-        const count = Number(document.getElementById("mint-clonecount").value) || 100;
-        const addr = await ctx.wallet.getAddress();
-        mlog(`Estimasi ${count} clone di ${currentConfig.name}...`, "log-info");
-        try {
-            const data = iface.encodeFunctionData("createAndMintBatch", [MINT_HELPER, nft, currentConfig.feeRecipient, addr, 1, count]);
-            const gasLimit = await ctx.provider.estimateGas({ from:addr, to:currentConfig.factoryAddr, value:0, data });
-            const gasPrice = await ctx.provider.getGasPrice();
-            const finalGas = gasLimit.add(gasLimit.mul(GAS_BUFFER).div(100));
-            const totalFee = ethers.utils.formatEther(finalGas.mul(gasPrice));
-            mlog(`Gas: ${finalGas.toString()}`, "log-info");
-            mlog(`Estimasi: ${totalFee} ${currentConfig.nativeToken}`, "log-success");
-        } catch(e) { mlog("Gagal estimasi: " + e.message, "log-error"); }
-    };
-
-    document.getElementById("mint-clearlog").onclick = () => { document.getElementById("mint-log").innerHTML = ""; };
-
-    document.getElementById("mintBtn").onclick = async () => {
-        if (running) return;
-        const ctx = getWP(); if (!ctx) return;
-        maxLoops = Number(document.getElementById("mint-maxloops").value) || 0;
-        running = true;
-        document.getElementById("mintBtn").disabled = true;
-        document.getElementById("stopBtn").disabled = false;
-        const addr = await wallet.getAddress();
-        mlog("Wallet: " + addr, "log-info");
-        mlog("Loop mulai. Max: " + (maxLoops||"∞"), "log-info");
-        loopCount = 0;
-        const nft = document.getElementById("mint-nft").value.trim();
-        const count = Number(document.getElementById("mint-clonecount").value) || 100;
-
-        while(running) {
-            if (maxLoops > 0 && loopCount >= maxLoops) { mlog("Max loop tercapai.", "log-info"); break; }
-            loopCount++;
-            mlog(`[${loopCount}] Minting ${count} clone...`, "log-info");
-            try {
-                const data = iface.encodeFunctionData("createAndMintBatch", [MINT_HELPER, nft, currentConfig.feeRecipient, addr, 1, count]);
-                const gasLimit = await provider.estimateGas({ from:addr, to:currentConfig.factoryAddr, value:0, data });
-                const finalGas = gasLimit.add(gasLimit.mul(GAS_BUFFER).div(100));
-                const gasPrice = await provider.getGasPrice();
-                const factory = new ethers.Contract(currentConfig.factoryAddr, FACTORY_ABI, wallet);
-                const tx = await factory.createAndMintBatch(MINT_HELPER, nft, currentConfig.feeRecipient, addr, 1, count, { value:0, gasLimit:finalGas, gasPrice });
-                const receipt = await tx.wait();
-                if (receipt.status === 1) mlog(`SUKSES Block ${receipt.blockNumber} (<a class="tx-link" href="${currentConfig.explorerPrefix}${tx.hash}" target="_blank">lihat</a>)`, "log-success");
-                else mlog("Tx gagal", "log-error");
-            } catch(e) { mlog("Error: " + (e.reason||e.message), "log-error"); }
-            if (!running) break;
-            const delay = Number(document.getElementById("mint-delay").value) || 0;
-            if (delay > 0) { mlog(`Delay ${delay}s...`, "log-info"); await new Promise(r => setTimeout(r, delay*1000)); }
-        }
-        running = false;
-        document.getElementById("mintBtn").disabled = false;
-        document.getElementById("stopBtn").disabled = true;
-        mlog("Loop berhenti.", "log-info");
-    };
-
-    document.getElementById("stopBtn").onclick = () => { running = false; mlog("Stop.", "log-info"); };
-    document.getElementById("stopBtn").disabled = true;
-})();
-
-// ===== DEPLOY MODULE =====
-let ReceiverArtifact = { abi: [], bytecode: "0x" };
-let FactoryArtifact = { abi: [], bytecode: "0x" };
-let savedBatchGasLimit = null;
-
-function deployLog(msg, type='info') {
-    const container = document.getElementById('deploy-log');
-    const div = document.createElement('div');
-    const colors = { info:'color:#94a3b8', success:'color:#10b981', error:'color:#ef4444;font-weight:bold', warn:'color:#eab308', cmd:'color:#3b82f6' };
-    div.style.cssText = colors[type] || colors.info;
-    div.innerHTML = `> ${msg}`;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-function deployClearLog() { document.getElementById('deploy-log').innerHTML = '<div style="color:#10b981;">Ready.</div>'; }
-
-async function loadDeployArtifacts() {
-    try {
-        const r1 = await fetch('./TokenFactoryReceiverV2.json?t='+Date.now());
-        const d1 = await r1.json(); ReceiverArtifact.abi = d1.abi; ReceiverArtifact.bytecode = d1.bytecode;
-        const r2 = await fetch('./FactoryCloner.json?t='+Date.now());
-        const d2 = await r2.json(); FactoryArtifact.abi = d2.abi; FactoryArtifact.bytecode = d2.bytecode;
-        deployLog("ABI loaded.", "success");
-    } catch(e) { deployLog("Gagal load ABI: "+e.message, "error"); }
-}
-
-function getDeployNet() {
-    const val = document.getElementById('deploy-networkSelect').value;
-    if (val === 'manual') return { chainId: document.getElementById('deploy-manualChainId').value, name: document.getElementById('deploy-manualNetName').value||'CUSTOM', rpc: document.getElementById('deploy-manualRpc').value };
-    const p = val.split('|'); return { chainId:p[0], name:p[1], rpc:p[2] };
-}
-
-document.getElementById('deploy-networkSelect').addEventListener('change', e => {
-    document.getElementById('deploy-manualFields').style.display = e.target.value==='manual'?'block':'none';
-});
-
-async function deployUpdateWallet() {
-    try {
-        const pk = document.getElementById('deploy-pk').value.trim();
-        const net = getDeployNet();
-        if (!pk||!net.rpc) { deployLog("Isi PK & jaringan!", "error"); return; }
-        const provider = new ethers.providers.JsonRpcProvider(net.rpc);
-        const wallet = new ethers.Wallet(pk, provider);
-        const bal = await provider.getBalance(wallet.address);
-        document.getElementById('deploy-wallet-display').style.display = 'block';
-        document.getElementById('deploy-addr').innerText = wallet.address.slice(0,6)+'...'+wallet.address.slice(-4);
-        document.getElementById('deploy-balance').innerText = parseFloat(ethers.utils.formatEther(bal)).toFixed(6)+' ETH';
-        deployLog("Connected: "+wallet.address, "success");
-    } catch(e) { deployLog("Error: "+e.message, "error"); }
-}
-
-async function getDeploySigner() {
-    const net = getDeployNet();
-    const pk = document.getElementById('deploy-pk').value.trim();
-    if (!pk) throw new Error("PK kosong");
-    const provider = new ethers.providers.JsonRpcProvider(net.rpc);
-    return { provider, wallet: new ethers.Wallet(pk, provider), net };
-}
-
-async function deployContract(type) {
-    try {
-        const { provider, wallet, net } = await getDeploySigner();
-        const artifact = type==='Receiver'?ReceiverArtifact:FactoryArtifact;
-        if (!artifact.abi.length) throw new Error("ABI belum diload");
-        deployLog(`Deploy ${type} di ${net.name}...`, 'cmd');
-        const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
-        let args = [];
-        if (type==='Factory') {
-            const rec = document.getElementById('deploy-receiverAddr').value;
-            if (!rec) throw new Error("Deploy Receiver dulu!");
-            args = [rec];
-        }
-        const contract = await factory.deploy(...args);
-        deployLog("Tx: "+contract.deployTransaction.hash.slice(0,15)+"...", "warn");
-        await contract.deployed();
-        document.getElementById(type==='Receiver'?'deploy-receiverAddr':'deploy-factoryAddr').value = contract.address;
-        deployLog(`${type} deployed: ${contract.address}`, "success");
-    } catch(e) { deployLog("Error: "+(e.reason||e.message), "error"); }
-}
-
-async function deployDryRun() {
-    try {
-        const { provider, wallet } = await getDeploySigner();
-        const fAddr = document.getElementById('deploy-factoryAddr').value;
-        const count = document.getElementById('deploy-cloneCount').value;
-        const nft = document.getElementById('deploy-nftAddress').value;
-        if (!fAddr||!nft||!count) throw new Error("Isi semua field");
-        const contract = new ethers.Contract(fAddr, FactoryArtifact.abi, wallet);
-        const est = await contract.estimateGas.createAndMintBatch("0x00005EA00Ac477B1030CE78506496e8C2dE24bf5", nft, "0x0000a26b00c1F0DF003000390027140000fAa719", wallet.address, 1, parseInt(count), {value:0});
-        savedBatchGasLimit = est.add(est.div(10));
-        deployLog("Dry Run OK. Gas: "+savedBatchGasLimit.toString(), "success");
-    } catch(e) { savedBatchGasLimit=null; deployLog("Dry Run Error: "+(e.reason||e.message), "error"); }
-}
-
-async function deployExecuteBatch() {
-    if (!savedBatchGasLimit) { deployLog("Klik Dry Run dulu!", "error"); return; }
-    try {
-        const { provider, wallet } = await getDeploySigner();
-        const fAddr = document.getElementById('deploy-factoryAddr').value;
-        const count = document.getElementById('deploy-cloneCount').value;
-        const nft = document.getElementById('deploy-nftAddress').value;
-        const contract = new ethers.Contract(fAddr, FactoryArtifact.abi, wallet);
-        const tx = await contract.createAndMintBatch("0x00005EA00Ac477B1030CE78506496e8C2dE24bf5", nft, "0x0000a26b00c1F0DF003000390027140000fAa719", wallet.address, 1, parseInt(count), {gasLimit:savedBatchGasLimit, value:0});
-        deployLog("Tx: "+tx.hash.slice(0,15)+"...", "warn");
-        await tx.wait(1);
-        deployLog("Batch Mint Selesai!", "success");
-        savedBatchGasLimit = null;
-    } catch(e) { deployLog("Error: "+(e.reason||e.message), "error"); }
-}
-
-async function deployManageWL(action) {
-    try {
-        const { provider, wallet } = await getDeploySigner();
-        const fAddr = document.getElementById('deploy-factoryAddr').value;
-        const input = document.getElementById('deploy-wlInput').value;
-        if (!fAddr||!input) throw new Error("Isi field");
-        const contract = new ethers.Contract(fAddr, FactoryArtifact.abi, wallet);
-        let tx;
-        if (action==='add') tx = await contract.addToWhitelist(input);
-        else if (action==='delete') tx = await contract.removeFromWhitelist(input);
-        else { const p = ethers.utils.parseEther(input); tx = await contract.setMinETHWhitelist(p); }
-        deployLog("Tx: "+tx.hash.slice(0,15)+"...", "warn");
-        await tx.wait(1);
-        deployLog(`${action.toUpperCase()} Berhasil!`, "success");
-    } catch(e) { deployLog("Error: "+(e.reason||e.message), "error"); }
-}
-
-// ===== DOT MODULE =====
-let dotAllResults=[], dotCurrentPage=1, dotCopiedSet=new Set();
-const DOT_PER_PAGE = 50;
-
-function dotGenerate() {
-    let input = document.getElementById('dot-input').value.trim();
-    let username = input.includes('@') ? input.split('@')[0] : input;
-    if (!username || username.length > 20) { alert('Invalid or too long'); return; }
-    dotCopiedSet.clear();
-    dotAllResults = [];
-    const gaps = username.length - 1;
-    const total = Math.pow(2, gaps);
-    for (let i=0; i<total; i++) {
-        let v = username[0];
-        for (let j=0; j<gaps; j++) { if ((i & (1<<j))!==0) v+='.'; v+=username[j+1]; }
-        dotAllResults.push(v+'@gmail.com');
-    }
-    dotCurrentPage = 1;
-    dotRender();
-}
-
-function dotRender() {
-    const total = dotAllResults.length;
-    const pages = Math.ceil(total/DOT_PER_PAGE);
-    if (dotCurrentPage>pages) dotCurrentPage=pages;
-    if (dotCurrentPage<1) dotCurrentPage=1;
-    const start = (dotCurrentPage-1)*DOT_PER_PAGE;
-    const items = dotAllResults.slice(start, start+DOT_PER_PAGE);
-    const list = document.getElementById('dot-list');
-    list.innerHTML = '';
-    items.forEach(email => {
-        const div = document.createElement('div');
-        div.className = 'dot-email-item';
-        const isCopied = dotCopiedSet.has(email);
-        div.innerHTML = `<span>${email}</span><button class="${isCopied?'copied':''}" onclick="dotCopy('${email}',this)">${isCopied?'COPIED':'COPY'}</button>`;
-        list.appendChild(div);
-    });
-    document.getElementById('dot-total').innerText = 'TOTAL: '+total.toLocaleString();
-    document.getElementById('dot-copied').innerText = 'COPIED: '+dotCopiedSet.size;
-    document.getElementById('dot-pageinfo').innerText = `PG ${dotCurrentPage}/${pages}`;
-    document.getElementById('dot-prev').disabled = (dotCurrentPage===1);
-    document.getElementById('dot-next').disabled = (dotCurrentPage===pages||pages===0);
-    document.getElementById('dot-result').style.display = 'flex';
-}
-
-function dotChangePage(d) { dotCurrentPage+=d; dotRender(); }
-function dotCopy(text, btn) {
-    navigator.clipboard.writeText(text);
-    btn.classList.add('copied'); btn.innerText='COPIED';
-    dotCopiedSet.add(text);
-    document.getElementById('dot-copied').innerText = 'COPIED: '+dotCopiedSet.size;
-}
-
-// ===== STUDIO MODULE =====
-let studioImgCID="", studioJsonCID="", studioName="NFT", studioCollageRunning=false, studioContractSize=0;
-let studioMode="rpc", studioOsItems=[], studioActiveGW="";
-const STUDIO_GW = ["https://alchemy.mypinata.cloud/ipfs/{cid}/","https://ipfs.io/ipfs/{cid}/","https://{cid}.ipfs.w3s.link/","https://{cid}.ipfs.4everland.io/"];
-const STUDIO_GQL='https://opensea.io/__api/graphql';
-const STUDIO_PROXY='https://corsproxy.io/?';
-
-function studioSwitchMode(mode) {
-    studioMode=mode;
-    document.getElementById('studio-tab-rpc').className='studio-tab'+(mode==='rpc'?' active':'');
-    document.getElementById('studio-tab-opensea').className='studio-tab'+(mode==='opensea'?' active':'');
-    document.getElementById('studio-mode-rpc').style.display=mode==='rpc'?'block':'none';
-    document.getElementById('studio-mode-opensea').style.display=mode==='opensea'?'block':'none';
-    document.getElementById('studio-info').style.display='none';
-}
-function studioToggleManualRpc() { document.getElementById('studio-manual-rpc').style.display=document.getElementById('studio-network').value==='manual'?'block':'none'; }
-function studioLog(msg) { const box=document.getElementById('studio-log'); box.innerHTML='<div>> '+new Date().toLocaleTimeString()+': '+msg+'</div>'+box.innerHTML; }
-function studioClearLog() { document.getElementById('studio-log').innerHTML='> Cleared.'; }
-
-function studioCleanCID(uri) {
-    if (!uri) return "";
-    return uri.replace('ipfs://','').replace(/https:\/\/.*\.ipfs\..*\/ipfs\//,'').replace('https://gateway.pinata.cloud/ipfs/','').replace('https://ipfs.io/ipfs/','').split('/')[0];
-}
-
-async function studioSmartFetch(cid, path, type) {
-    type=type||'json';
-    for (let i=0;i<STUDIO_GW.length;i++) {
-        const url=STUDIO_GW[i].replace('{cid}',cid)+path;
-        try { const r=await fetch(url); if(r.ok){ studioActiveGW=STUDIO_GW[i].replace('{cid}',cid); return type==='json'?await r.json():await r.blob(); } } catch(e){}
-    }
-    return null;
-}
-
-async function studioFetchNFT() {
-    const addr=document.getElementById('studio-address').value.trim();
-    const rpc=document.getElementById('studio-network').value==='manual'?document.getElementById('studio-manual-rpc').value:document.getElementById('studio-network').value;
-    if(!addr||!rpc){alert("Isi field!");return;}
-    document.getElementById('studio-loading').style.display='block';
-    try {
-        const p=new ethers.providers.JsonRpcProvider(rpc);
-        const abi=["function name() view returns (string)","function symbol() view returns (string)","function totalSupply() view returns (uint256)","function collectionSize() view returns (uint256)","function tokenURI(uint256) view returns (string)"];
-        const c=new ethers.Contract(addr,abi,p);
-        const [name,symbol,supply,uri]=await Promise.all([c.name(),c.symbol(),c.totalSupply(),c.tokenURI(1)]);
-        let size; try{size=await c.collectionSize();}catch(e){size=supply;}
-        studioContractSize=parseInt(size.toString());
-        studioName=name;
-        studioJsonCID=studioCleanCID(uri);
-        const meta=await studioSmartFetch(studioJsonCID,"1.json","json");
-        if(!meta) throw new Error("IPFS error");
-        studioImgCID=studioCleanCID(meta.image);
-        document.getElementById('studio-name').innerText=name;
-        document.getElementById('studio-symbol').innerText=symbol;
-        document.getElementById('studio-supply').innerText=supply.toString();
-        document.getElementById('studio-limit').value=studioContractSize;
-        document.getElementById('studio-edit-name').value=name;
-        document.getElementById('studio-edit-desc').value=meta.description||"";
-        document.getElementById('studio-info').style.display='block';
-        studioLog("Connected! "+studioActiveGW);
-    } catch(e){studioLog("Error: "+e.message);} finally{document.getElementById('studio-loading').style.display='none';}
-}
-
-async function studioFetchOpenSea() {
-    const input=document.getElementById('studio-opensea-url').value.trim();
-    if(!input){alert("Isi slug/URL!");return;}
-    let slug=input; const m=input.match(/opensea\.io\/collection\/([^\/\?#]+)/); if(m) slug=m[1];
-    slug=slug.toLowerCase().replace(/[^a-z0-9-]/g,'');
-    document.getElementById('studio-loading').style.display='block';
-    document.getElementById('studio-loading-text').innerText='Fetching OpenSea...';
-    try {
-        const body=JSON.stringify({query:'query($s:String!){collectionBySlug(slug:$s){...on Collection{name description}} collectionItemsCount(collectionSlug:$s){count} collectionItems(collectionSlug:$s,limit:50,sort:{by:CREATED_DATE,direction:ASC}){items{name description tokenId imageUrl originalImageUrl}nextPageCursor}}',variables:{s:slug}});
-        let r=await fetch(STUDIO_GQL,{method:'POST',headers:{'content-type':'application/json'},body});
-        if(!r.ok) r=await fetch(STUDIO_PROXY+encodeURIComponent(STUDIO_GQL),{method:'POST',headers:{'content-type':'application/json'},body});
-        const j=await r.json();
-        const col=j.data.collectionBySlug;
-        const count=j.data.collectionItemsCount.count;
-        const items=j.data.collectionItems.items;
-        studioOsItems=items;
-        studioName=(col&&col.name)||slug;
-        studioContractSize=count;
-        document.getElementById('studio-name').innerText=studioName;
-        document.getElementById('studio-symbol').innerText=slug;
-        document.getElementById('studio-supply').innerText=count.toLocaleString();
-        document.getElementById('studio-limit').value=Math.min(count,100);
-        document.getElementById('studio-edit-name').value=studioName;
-        document.getElementById('studio-edit-desc').value=(col&&col.description)||"";
-        document.getElementById('studio-info').style.display='block';
-        studioLog("OpenSea: "+studioName+" ("+count+" items)");
-    } catch(e){studioLog("Error: "+e.message);} finally{document.getElementById('studio-loading').style.display='none';}
-}
-
-async function studioGenerateCollage() {
-    const grid=document.getElementById('studio-gridType').value.split(',').map(Number);
-    const cols=grid[0],rows=grid[1],total=cols*rows;
-    studioCollageRunning=true;
-    document.getElementById('studio-loading').style.display='block';
-    document.getElementById('studio-loading-text').innerText='Rendering 0/'+total+'...';
-    const canvas=document.getElementById('studioCollageCanvas');
-    const ctx=canvas.getContext('2d');
-    const tile=300; canvas.width=cols*tile; canvas.height=rows*tile;
-    ctx.fillStyle="#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
-    let done=0;
-
-    if(studioMode==='opensea'&&studioOsItems.length) {
-        await Promise.all(Array.from({length:total},(_,k)=>k).map(async k=>{
-            const it=studioOsItems[k%studioOsItems.length];
-            if(!it||!it.imageUrl) return;
-            try {
-                const img=new Image(); img.crossOrigin='anonymous';
-                await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=it.imageUrl;});
-                ctx.drawImage(img,(k%cols)*tile,Math.floor(k/cols)*tile,tile,tile);
-                done++;
-            } catch(e){}
-        }));
-    } else if(studioJsonCID) {
-        for(let i=1;i<=total;i++) {
-            if(!studioCollageRunning) break;
-            const meta=await studioSmartFetch(studioJsonCID,i+'.json','json');
-            if(meta) {
-                const imgCid=studioCleanCID(meta.image);
-                const imgPath=meta.image.split('/').pop();
-                const blob=await studioSmartFetch(imgCid,imgPath,'blob');
-                if(blob) {
-                    const img=new Image();
-                    await new Promise(r=>{img.onload=r;img.src=URL.createObjectURL(blob);});
-                    ctx.drawImage(img,((i-1)%cols)*tile,Math.floor((i-1)/cols)*tile,tile,tile);
-                    done++;
-                }
-            }
-            document.getElementById('studio-loading-text').innerText='Rendering '+done+'/'+total+'...';
-        }
-    }
-    try {
-        document.getElementById('studio-collage-img').src=canvas.toDataURL("image/jpeg",0.8);
-        document.getElementById('studio-collage-img').style.display='block';
-    } catch(e){ studioLog("Canvas CORS issue"); }
-    studioCollageRunning=false;
-    document.getElementById('studio-loading').style.display='none';
-    studioLog("Collage done! "+done+"/"+total);
-}
-
-async function studioDownloadZip() {
-    const limit=parseInt(document.getElementById('studio-limit').value)||10;
-    const name=document.getElementById('studio-edit-name').value||studioName;
-    const desc=document.getElementById('studio-edit-desc').value;
-    studioCollageRunning=true;
-    document.getElementById('studio-loading').style.display='block';
-    document.getElementById('studio-loading-text').innerText='Building ZIP...';
-    const zip=new JSZip();
-    const root=zip.folder(name);
-    const imgF=root.folder(name+'_images');
-    const jsonF=root.folder(name+'_metadata');
-
-    if(studioMode==='opensea'&&studioOsItems.length) {
-        for(let i=0;i<limit;i++) {
-            const src=studioOsItems[i%studioOsItems.length];
-            jsonF.file((i+1)+'.json',JSON.stringify({name:name+' #'+(i+1),description:desc||src.description||'',image:src.originalImageUrl||src.imageUrl||''},null,2));
-        }
-    } else if(studioJsonCID) {
-        for(let i=1;i<=limit;i++) {
-            const meta=await studioSmartFetch(studioJsonCID,((i>studioContractSize?Math.ceil(Math.random()*studioContractSize):i))+'.json','json');
-            if(meta) { meta.name=name+' #'+i; meta.description=desc; jsonF.file(i+'.json',JSON.stringify(meta,null,2)); }
-            if(i%50===0) document.getElementById('studio-loading-text').innerText='Meta: '+i+'/'+limit;
-        }
-    }
-    const blob=await zip.generateAsync({type:"blob"});
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'_Package.zip'; a.click();
-    studioCollageRunning=false;
-    document.getElementById('studio-loading').style.display='none';
-    studioLog("Download: "+(blob.size/1048576).toFixed(2)+"MB");
-}
-
-// ===== AI MODULE =====
-let aiMessages=[], aiIsGen=false, aiAbort=null;
-let aiKey=localStorage.getItem('ai_key')||'';
-let aiUrl=localStorage.getItem('ai_url')||'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-let aiModel=localStorage.getItem('ai_model')||'gemini-2.0-flash';
-
-function aiSaveSettings() {
-    aiKey=document.getElementById('ai-key').value;
-    aiUrl=document.getElementById('ai-url').value;
-    aiModel=document.getElementById('ai-model').value;
-    localStorage.setItem('ai_key',aiKey);
-    localStorage.setItem('ai_url',aiUrl);
-    localStorage.setItem('ai_model',aiModel);
-    document.getElementById('ai-settings').classList.remove('show');
-}
-
-(function(){
-    document.getElementById('ai-key').value=aiKey;
-    document.getElementById('ai-url').value=aiUrl;
-    document.getElementById('ai-model').value=aiModel;
-})();
-
-async function aiSend() {
-    const txt=document.getElementById('ai-inp').value.trim();
-    if(!txt||!aiKey){if(!aiKey)alert("Set API Key dulu!");return;}
-    const chatWin=document.getElementById('ai-chat');
-    if(chatWin.querySelector('.ai-welcome')) chatWin.innerHTML='';
-    const uDiv=document.createElement('div'); uDiv.className='ai-user-msg'; uDiv.innerText=txt;
-    chatWin.appendChild(uDiv);
-    document.getElementById('ai-inp').value='';
-    aiMessages.push({role:'user',content:txt});
-
-    const thinkDiv=document.createElement('div'); thinkDiv.className='ai-bot-msg'; thinkDiv.style.color='#64748b'; thinkDiv.innerText='Memproses...';
-    chatWin.appendChild(thinkDiv);
-    chatWin.scrollTop=chatWin.scrollHeight;
-
-    const isAnth=aiUrl.includes('anthropic');
-    let h={"Content-Type":"application/json"};
-    if(isAnth){h["x-api-key"]=aiKey;h["anthropic-version"]="2023-06-01";h["anthropic-dangerous-direct-browser-access"]="true";}
-    else h["Authorization"]="Bearer "+aiKey;
-    const body={model:aiModel,messages:aiMessages.map(m=>({role:m.role,content:m.content}))};
-    if(isAnth) body.max_tokens=4096;
-
-    try {
-        const res=await fetch(aiUrl,{method:'POST',headers:h,body:JSON.stringify(body)});
-        const data=await res.json();
-        if(!res.ok) throw new Error(data.error?.message||"Request failed");
-        const aiText=isAnth?data.content[0].text:data.choices[0].message.content;
-        thinkDiv.innerHTML=marked.parse(aiText);
-        thinkDiv.style.color='';
-        thinkDiv.querySelectorAll('pre code').forEach(block=>hljs.highlightElement(block));
-        aiMessages.push({role:'assistant',content:aiText});
-    } catch(e) { thinkDiv.innerHTML='<span style="color:#ef4444;">Error: '+e.message+'</span>'; }
-    chatWin.scrollTop=chatWin.scrollHeight;
-}
-
-// ===== MAIL MODULE =====
-let mailInterval=null, mailLastContent="";
-const MAIL_API='https://tempomail.vercel.app/api/api';
-
-async function mailGenerate() {
-    document.getElementById('mail-inbox').innerHTML='<div class="mail-empty">Menyiapkan...</div>';
-    mailLastContent="";
-    try {
-        const r=await fetch(MAIL_API+'?action=generate');
-        const d=await r.json();
-        if(d.success) { document.getElementById('mail-email').value=d.result.email; mailStartRefresh(); }
-    } catch(e){}
-}
-
-function mailCheck() {
-    if(document.getElementById('mail-email').value.includes('@')) { mailLastContent=""; mailStartRefresh(); }
-}
-
-function mailStartRefresh() {
-    if(mailInterval) clearInterval(mailInterval);
-    mailFetchInbox();
-    mailInterval=setInterval(mailFetchInbox, 3000);
-}
-
-async function mailFetchInbox() {
-    const email=document.getElementById('mail-email').value;
-    if(!email) return;
-    try {
-        const r=await fetch(MAIL_API+'?action=inbox&email='+email);
-        const d=await r.json();
-        if(d.success&&d.result.count>0) {
-            const content=JSON.stringify(d.result.inbox);
-            if(content===mailLastContent) return;
-            mailLastContent=content;
-            document.getElementById('mail-inbox').innerHTML=d.result.inbox.reverse().map(msg=>{
-                let body=msg.message.replace(/\s\s+/g,' ').trim().replace(/\b\d{4,7}\b/g,m=>`<span class="mail-otp">${m}</span>`);
-                return `<div class="mail-msg-card"><div class="mail-msg-meta"><b>DARI:</b> ${msg.from}<br><b>SUBJEK:</b> ${msg.subject}</div><div class="mail-msg-body">${body}</div></div>`;
-            }).join('');
-            document.getElementById('mail-status').innerText='Update: '+new Date().toLocaleTimeString();
-        } else {
-            const c=document.getElementById('mail-inbox');
-            if(!c.querySelector('.mail-msg-card')) c.innerHTML='<div class="mail-empty">Menunggu pesan...</div>';
-        }
-    } catch(e){}
-}
-
-function mailCopy() {
-    const email=document.getElementById('mail-email').value;
-    if(email) navigator.clipboard.writeText(email);
-}
-
-// ===== INIT =====
-window.addEventListener('load', () => { loadDeployArtifacts(); });
-</script>
 </body>
 </html>

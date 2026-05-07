@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MINT PUBLIC OS</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: linear-gradient(135deg,#0f172a,#0ea5a4); color:#fff; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; text-align: center; }
+    .wrap { background: rgba(0,0,0,0.26); padding:24px; border-radius:12px; width:420px; box-shadow:0 8px 30px rgba(0,0,0,0.4); text-align: left; }
+    h2 { margin: 0 0 16px 0; font-size: 24px; text-align: center; background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: rainbow 6s linear infinite; }
+    @keyframes rainbow { to { background-position: 600vw; } }
+    label{ font-size: 11px; opacity: 0.95; display: block; margin-bottom: 6px; text-align: left; text-transform: uppercase; font-weight: bold; }
+    
+    input[type="password"], input[type="number"], input[type="text"], select{ 
+        width:100%; 
+        padding:9px 10px; 
+        margin:0 0 12px 0; 
+        border-radius:8px; 
+        border:1px solid rgba(255,255,255,0.15); 
+        background:rgba(255,255,255,0.05); 
+        color:#fff; 
+        font-size:14px; 
+        box-sizing:border-box; 
+        font-family: Arial, sans-serif; 
+    }
+    
+    select { 
+        appearance: none; 
+        -webkit-appearance: none; 
+        -moz-appearance: none; 
+        background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%20176.7c-4.3%204.3-10%206.3-15.7%206.3s-11.4-2-15.7-6.3L146.2%2089.4%2036.7%20176.7c-4.3%204.3-10%206.3-15.7%206.3s-11.4-2-15.7-6.3c-8.5-8.5-8.5-22.3%200-30.8l130.4-130.4c8.5-8.5%2022.3-8.5%2030.8%200l130.4%20130.4c8.5%208.5%208.5%2022.3%200%2030.8z%22%2F%3E%3C%2Fsvg%3E'); 
+        background-repeat: no-repeat; 
+        background-position: right 10px top 50%; 
+        background-size: 10px; 
+        padding-right: 30px; 
+    }
+    
+    select option {
+        background-color: #0f172a; 
+        color: #fff; 
+    }
+
+    input::placeholder { font-size: 14px; text-transform: none; }
+    .row { display:flex; gap:8px; margin-bottom:8px; }
+    .row > * { flex:1; }
+    .action-controls { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 10px; }
+    .action-controls > button { flex: 1; padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 11px; background: #334155; color: #e2e8f0; font-family: Arial, sans-serif; }
+    .action-controls > button:hover:not([disabled]) { background: #475569; }
+    .controls { display:flex; gap:8px; margin-top:6px; }
+    .controls > button { flex:1; padding:10px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-family: Arial, sans-serif; }
+    #mint { background:linear-gradient(90deg,#7c3aed,#06b6d4); color:#fff; }
+    #stop { background:#ff4444; color:#fff; }
+    #log { margin-top:14px; height:260px; overflow:auto; background:rgba(0,0,0,0.36); padding:10px; border-radius:8px; font-family: Arial, sans-serif; font-size:13px; color:#e6fffb; text-align: left; }
+    .log-success { color: #00ff88; }
+    .log-error { color: #ffaaaa; }
+    .log-info { color: #c2f3ff; }
+    .log-warn { color: #ffeb3b; }
+    a.tx-link { color:#80ffea; text-decoration:none; }
+    a.tx-link:hover { text-decoration:underline; }
+    button[disabled] { opacity:0.6; cursor:not-allowed; }
+    .meta { font-size:11px; opacity:0.8; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>MINT PUBLIC OS | MULTI-CHAIN</h2>
+
+    <label for="pk">Privatekey</label>
+    <input id="pk" type="password" placeholder="0x..." />
+
+    <label for="nftContractInput">Kontrak NFT</label>
+    <input id="nftContractInput" type="text" placeholder="0x..." />
+    
+    <label for="networkSelect">Jaringan</label>
+    <select id="networkSelect">
+      <option value="monad">Monad</option>
+      <option value="ethereum">Ethereum Mainnet</option>
+      <option value="apechain">Apechain</option>
+      <option value="animechain">Animechain</option>
+      <option value="base">Base</option>
+    </select>
+    
+    <div class="row">
+      <div>
+        <label for="delay">Delay (detik)</label>
+        <input id="delay" type="number" min="0" step="1" value="0" />
+      </div>
+      <div>
+        <label for="maxloops">Max Loop</label>
+        <input id="maxloops" type="number" min="0" step="1" value="0" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="flex: 0 0 100%;">
+        <label for="cloneCountInput">Jumlah Wallet</label>
+        <input id="cloneCountInput" type="number" min="1" step="1" value="100" />
+      </div>
+    </div>
+
+    <div class="action-controls">
+        <button id="checkBalanceBtn">Cek Balance</button>
+        <button id="getEstimationBtn">Get Estimasi</button>
+        <button id="clearLogBtn">Clear Log</button>
+    </div>
+
+    <div class="controls">
+      <button id="mint">Mulai Loop Mint</button>
+      <button id="stop">Stop</button>
+    </div>
+
+    <div id="log" aria-live="polite"></div>
+  </div>
+
+  <script>
+    (function(){
+      const ethersLib = window.ethers;
+      if (!ethersLib) { alert("ethers.js gagal dimuat."); return; }
+
+      const MINT_HELPER = "0x00005EA00Ac477B1030CE78506496e8C2dE24bf5";
+      const FACTORY_ABI = [
+        "function createAndMintBatch(address mintHelper,address nftContract,address feeRecipient,address mainWallet,uint256 amount,uint256 count) payable returns (bool)"
+      ];
+      const GAS_BUFFER_PERCENT = 10;
+      const AMOUNT_TO_MINT = 1;
+      const DEFAULT_CLONE_COUNT = 100;
+      
+      const CONFIG = {
+        monad: {
+          name: "Monad",
+          rpcUrl: "https://rpc4.monad.xyz",
+          factoryAddr: "0x443323a68F170C3358fA5168bf948a00F0da49c9",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719", 
+          explorerPrefix: "https://monadscan.com/tx/", 
+          nativeToken: "MONAD",
+          useEip1559: false, 
+        },
+        ethereum: {
+          name: "Ethereum Mainnet",
+          rpcUrl: "https://lb.drpc.live/ethereum/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4",
+          factoryAddr: "0x44E3990621738751e6a352dBB149aD6Ed03ef53d",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://etherscan.io/tx/",
+          nativeToken: "ETH",
+          useEip1559: false, 
+        },
+        apechain: {
+          name: "Apechain",
+          rpcUrl: "https://rpc.apechain.com/http",
+          factoryAddr: "0x246fD3c3Fc51dD0e6F11FB873Fd5D07Ff03a376A",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://apescan.io/tx/",
+          nativeToken: "APE",
+          useEip1559: false, 
+        },
+        animechain: {
+          name: "animechain",
+          rpcUrl: "https://rpc-animechain-39xf6m45e3.t.conduit.xyz/",
+          factoryAddr: "0xA2ead8857987D26704eFcbbc91eFb2aCDFf90246",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://explorer.anime.xyz/tx/",
+          nativeToken: "ANIME",
+          useEip1559: false, 
+        },
+        base: {
+          name: "Base",
+          rpcUrl: "https://mainnet.base.org/",
+          factoryAddr: "0x4fb4f576eAc4Fc4828F765965E8CE5875ED63809",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://basescan.org/tx/",
+          nativeToken: "ETH",
+          useEip1559: false,
+        }
+      };
+
+      const pkInput = document.getElementById("pk");
+      const nftContractInput = document.getElementById("nftContractInput");
+      const networkSelect = document.getElementById("networkSelect"); 
+      const delayInput = document.getElementById("delay");
+      const maxloopsInput = document.getElementById("maxloops");
+      const cloneCountInput = document.getElementById("cloneCountInput");
+      const mintBtn = document.getElementById("mint");
+      const stopBtn = document.getElementById("stop");
+      const logDiv = document.getElementById("log");
+      const checkBalanceBtn = document.getElementById("checkBalanceBtn");
+      const getEstimationBtn = document.getElementById("getEstimationBtn");
+      const clearLogBtn = document.getElementById("clearLogBtn");
+
+      let currentConfig = CONFIG[networkSelect.value];
+      let provider = null;
+      let wallet = null;
+      let running = false;
+      let loopCount = 0;
+      let maxLoops = 0;
+      const iface = new ethersLib.utils.Interface(FACTORY_ABI);
+
+      function log(text, cls="log-info") {
+        const t = new Date().toLocaleTimeString();
+        const el = document.createElement("div");
+        el.className = cls;
+        el.innerHTML = `[${t}] ${text}`;
+        logDiv.prepend(el);
+      }
+
+      function sleep(ms){
+        return new Promise(resolve => setTimeout(resolve, ms));
+      }
+      
+      function clearLog() {
+          logDiv.innerHTML = "";
+      }
+
+      function updateConfig(network) {
+          currentConfig = CONFIG[network];
+          provider = null;
+          wallet = null; 
+          document.querySelector("h2").textContent = `MINT PUBLIC OS`;
+          log(`Jaringan diatur ke ${currentConfig.name}.`, "log-info");
+      }
+
+      function getWalletAndProvider() {
+          const pk = pkInput.value.trim();
+          const nftContract = nftContractInput.value.trim();
+          
+          if (!pk || !pk.startsWith("0x")) {
+              log("Private key tidak valid.", "log-error");
+              return null;
+          }
+          if (!nftContract || !ethersLib.utils.isAddress(nftContract)) {
+              log("Kontrak NFT tidak valid.", "log-error");
+              return null;
+          }
+
+          try {
+              if (!provider) {
+                  provider = new ethersLib.providers.JsonRpcProvider(currentConfig.rpcUrl);
+              }
+              wallet = new ethersLib.Wallet(pk, provider);
+              return { provider, wallet };
+          } catch (e) {
+              log("Error saat inisialisasi wallet: " + (e.message || String(e)), "log-error");
+              return null;
+          }
+      }
+
+      async function checkWalletBalance() {
+          const context = getWalletAndProvider();
+          if (!context) return;
+
+          checkBalanceBtn.disabled = true;
+          log(`Memeriksa saldo wallet di ${currentConfig.name}...`, "log-info");
+          
+          try {
+              const addr = await context.wallet.getAddress();
+              const balance = await context.provider.getBalance(addr);
+              const formattedBalance = ethersLib.utils.formatEther(balance);
+              log(`${addr}`, "log-success");
+              log(`${formattedBalance} ${currentConfig.nativeToken}`, "log-success");
+
+          } catch (error) {
+              log(`Error saat cek saldo: ${error.message || String(error)}`, "log-error");
+          } finally {
+              checkBalanceBtn.disabled = false;
+          }
+      }
+
+      async function buildFeeOverrides(providerInstance, addr) {
+        if (currentConfig.useEip1559) {
+          const feeData = await providerInstance.getFeeData();
+          if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+            return {
+              from: addr,
+              maxFeePerGas: feeData.maxFeePerGas,
+              maxPriorityFeePerGas: feeData.maxPriorityFeePerGas
+            };
+          }
+        }
+        
+        const gp = await providerInstance.getGasPrice();
+        return {
+          from: addr,
+          gasPrice: gp
+        };
+      }
+      
+      async function attemptEstimation(provider, mainWalletAddress, NFT_CONTRACT, COUNT, feeRecipientAddress) {
+          try {
+              const params = [MINT_HELPER, NFT_CONTRACT, feeRecipientAddress, mainWalletAddress, AMOUNT_TO_MINT, COUNT];
+              const data = iface.encodeFunctionData("createAndMintBatch", params);
+              
+              let estimateTx = {
+                  from: mainWalletAddress,
+                  to: currentConfig.factoryAddr,
+                  value: ethersLib.BigNumber.from(0),
+                  data: data,
+              };
+              
+              if (currentConfig.useEip1559) {
+                  const feeData = await provider.getFeeData();
+                  if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+                      estimateTx.maxFeePerGas = feeData.maxFeePerGas;
+                      estimateTx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
+                  }
+              }
+              
+              const gasLimit = await provider.estimateGas(estimateTx);
+              const gasPrice = await provider.getGasPrice(); 
+              
+              return { 
+                  gasLimit, 
+                  gasPrice, 
+                  selectedFeeRecipient: feeRecipientAddress 
+              };
+          } catch (error) {
+              return { gasLimit: null, gasPrice: null, selectedFeeRecipient: feeRecipientAddress, error };
+          }
+      }
+
+      async function estimateGasAndFee() {
+        const context = getWalletAndProvider();
+        if (!context) return;
+
+        getEstimationBtn.disabled = true;
+
+        const NFT_CONTRACT = nftContractInput.value.trim();
+        const CLONE_COUNT = Number(cloneCountInput.value) || DEFAULT_CLONE_COUNT;
+        const addr = await context.wallet.getAddress();
+        
+        log(`Estimasi Gas untuk ${CLONE_COUNT} clone di ${currentConfig.name}...`, "log-info");
+        
+        let result = await attemptEstimation(context.provider, addr, NFT_CONTRACT, CLONE_COUNT, currentConfig.feeRecipient);
+
+        if (!result.gasLimit) {
+            log(`Gagal memeriksa Estimasi...`, "log-error");
+            log(`Silahkan gunakan`);
+            log(`https://elmeeraseaportv3.vercel.app/`);
+            getEstimationBtn.disabled = false;
+            return;
+        }
+
+        const estimatedGasLimit = result.gasLimit;
+        const gasBuffer = estimatedGasLimit.mul(ethersLib.BigNumber.from(GAS_BUFFER_PERCENT)).div(100);
+        const finalGasLimit = estimatedGasLimit.add(gasBuffer);
+        
+        const feeOverrides = await buildFeeOverrides(context.provider, addr);
+        let perGas;
+        let feeType;
+
+        if (feeOverrides.maxFeePerGas) {
+            perGas = feeOverrides.maxFeePerGas;
+            feeType = `EIP-1559 (maxFeePerGas=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei)`;
+        } else {
+            perGas = feeOverrides.gasPrice;
+            feeType = `Legacy gasPrice=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei`;
+        }
+        
+        const totalFeeWei = finalGasLimit.mul(perGas);
+        const totalFeeEth = ethersLib.utils.formatEther(totalFeeWei);
+        
+        log(`Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
+        log(`Menggunakan ${feeType}`, "log-info");
+        log(`PERKIRAAN TOTAL ${currentConfig.nativeToken} YANG DIBUTUHKAN (MAX)`, "log-info");
+        log(`${totalFeeEth} ${currentConfig.nativeToken} `, "log-success");
+
+        getEstimationBtn.disabled = false;
+      }
+
+      async function doLoop() {
+        const NFT_CONTRACT = nftContractInput.value.trim();
+        const CLONE_COUNT = Number(cloneCountInput.value) || DEFAULT_CLONE_COUNT;
+
+        try {
+          if (!NFT_CONTRACT || !ethersLib.utils.isAddress(NFT_CONTRACT)) throw new Error("Kontrak NFT tidak valid.");
+          if (CLONE_COUNT <= 0) throw new Error("Konfigurasi Clone Count tidak valid.");
+
+          const addr = await wallet.getAddress();
+
+          log(`Loop mint dimulai di ${currentConfig.name}... `, "log-info");
+          log(`Max loop: ${maxLoops === 0 ? "tak terbatas" : maxLoops}`, "log-info");
+          loopCount = 0;
+
+          while (running) {
+            if (maxLoops > 0 && loopCount >= maxLoops) {
+              log(`Mencapai Max Loop (${maxLoops}). Menghentikan loop.`, "log-info");
+              break;
+            }
+
+            loopCount++;
+            log(`[${loopCount}] Minting ${CLONE_COUNT} clone...`, "log-info");
+
+            try {
+                let selectedFeeRecipient = currentConfig.feeRecipient;
+                let result = await attemptEstimation(provider, addr, NFT_CONTRACT, CLONE_COUNT, selectedFeeRecipient);
+
+                if (!result.gasLimit) {
+                    log("Gagal memeriksa Estimasi...", "log-error");
+                    await sleep(0); 
+                    continue; 
+                }
+
+                const estimatedGasLimit = result.gasLimit;
+                const gasBuffer = estimatedGasLimit.mul(ethersLib.BigNumber.from(GAS_BUFFER_PERCENT)).div(100);
+                const finalGasLimit = estimatedGasLimit.add(gasBuffer);
+
+                const baseFeeOverrides = await buildFeeOverrides(provider, addr);
+
+                const txOverrides = { 
+                    value: 0, 
+                    gasLimit: finalGasLimit 
+                };
+                if (baseFeeOverrides.maxFeePerGas && baseFeeOverrides.maxPriorityFeePerGas) {
+                  txOverrides.maxFeePerGas = baseFeeOverrides.maxFeePerGas;
+                  txOverrides.maxPriorityFeePerGas = baseFeeOverrides.maxPriorityFeePerGas;
+                } else if (baseFeeOverrides.gasPrice) {
+                  txOverrides.gasPrice = baseFeeOverrides.gasPrice;
+                }
+                
+                log(`Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
+
+                const factory = new ethersLib.Contract(currentConfig.factoryAddr, FACTORY_ABI, wallet);
+                const params = [MINT_HELPER, NFT_CONTRACT, selectedFeeRecipient, addr, AMOUNT_TO_MINT, CLONE_COUNT];
+
+                const tx = await factory.createAndMintBatch(...params, txOverrides);
+
+                const txHash = tx.hash;
+                const txLink = currentConfig.explorerPrefix + txHash;
+
+                const receipt = await tx.wait();
+
+                if (receipt && receipt.status === 1) {
+                  log(`SUKSES — Block ${receipt.blockNumber} (<a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">lihat</a>)`, "log-success");
+                } else {
+                  log(`Transaksi selesai tapi gagal / status != 1 (status=${receipt && receipt.status}) — <a class="tx-link" href="${txLink}" target="_blank" rel="noopener noreferrer">lihat</a>`, "log-error");
+                }
+
+            } catch (txErr) {
+              const message = txErr && txErr.message ? txErr.message : String(txErr);
+              log(`Error saat minting/pengiriman Tx: ${message}`, "log-error");
+              console.error(txErr);
+            }
+
+            if (!running) break;
+
+            const delaySec = Number(delayInput.value) || 0;
+            if (delaySec > 0) {
+              log(`Menunggu ${delaySec} detik sebelum mint berikutnya...`, "log-info");
+              const waitMs = delaySec * 1000;
+              const chunk = 500;
+              let waited = 0;
+              while (running && waited < waitMs) {
+                const rem = Math.min(chunk, waitMs - waited);
+                await sleep(rem);
+                waited += rem;
+              }
+            }
+          }
+
+          running = false;
+          mintBtn.disabled = false;
+          stopBtn.disabled = true;
+          log("Loop berhenti.", "log-info");
+        } catch (err) {
+          running = false;
+          mintBtn.disabled = false;
+          stopBtn.disabled = true;
+          log("Error utama: " + (err && err.message ? err.message : String(err)), "log-error");
+          console.error(err);
+        }
+      }
+
+      mintBtn.addEventListener("click", async () => {
+        if (running) { log("Loop sudah berjalan.", "log-error"); return; }
+        
+        const context = getWalletAndProvider();
+        if (!context) return;
+
+        const cloneCount = Number(cloneCountInput.value);
+        if (cloneCountInput.value.trim() !== "" && (isNaN(cloneCount) || cloneCount <= 0)) {
+            log("Jumlah Wallet yang dimasukkan tidak valid.", "log-error"); return;
+        }
+
+        maxLoops = Number(maxloopsInput.value) || 0;
+        if (maxLoops < 0) maxLoops = 0;
+
+        try {
+          const addr = await wallet.getAddress();
+          log("Wallet siap: " + addr, "log-info");
+          running = true;
+          mintBtn.disabled = true;
+          stopBtn.disabled = false;
+          
+          doLoop();
+        } catch (e) {
+          log("Error saat inisialisasi wallet: " + (e && e.message ? e.message : String(e)), "log-error");
+          mintBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+      });
+
+      stopBtn.addEventListener("click", () => {
+        if (!running) { log("Tidak ada loop yang berjalan.", "log-error"); return; }
+        running = false;
+        log("Stop ditekan", "log-info");
+      });
+      
+      checkBalanceBtn.addEventListener("click", checkWalletBalance);
+      getEstimationBtn.addEventListener("click", estimateGasAndFee);
+      clearLogBtn.addEventListener("click", () => { clearLog(); log("Log berhasil dibersihkan.", "log-info"); });
+      
+      networkSelect.addEventListener("change", (e) => {
+          updateConfig(e.target.value);
+      });
+
+      stopBtn.disabled = true;
+      clearLog(); 
+      updateConfig(networkSelect.value); 
+    })();
+  </script>
+</body>
+</html>
