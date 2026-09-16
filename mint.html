@@ -80,6 +80,7 @@
       <option value="apechain">Apechain</option>
       <option value="animechain">Animechain</option>
       <option value="base">Base</option>
+      <option value="arc">Arc</option>
     </select>
     
     <div class="row">
@@ -130,6 +131,7 @@
       const CONFIG = {
         monad: {
           name: "Monad",
+          chainId: 143,
           rpcUrl: "https://rpc4.monad.xyz",
           factoryAddr: "0x443323a68F170C3358fA5168bf948a00F0da49c9",
           feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719", 
@@ -139,6 +141,7 @@
         },
         ethereum: {
           name: "Ethereum Mainnet",
+          chainId: 1,
           rpcUrl: "https://lb.drpc.live/ethereum/AvhviY86-0ePildqB8hKaAnjUf_dOJsR76b3hkHL9tz4",
           factoryAddr: "0x44E3990621738751e6a352dBB149aD6Ed03ef53d",
           feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
@@ -148,6 +151,7 @@
         },
         apechain: {
           name: "Apechain",
+          chainId: 33139,
           rpcUrl: "https://rpc.apechain.com/http",
           factoryAddr: "0x246fD3c3Fc51dD0e6F11FB873Fd5D07Ff03a376A",
           feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
@@ -157,6 +161,7 @@
         },
         animechain: {
           name: "animechain",
+          chainId: 69000,
           rpcUrl: "https://rpc-animechain-39xf6m45e3.t.conduit.xyz/",
           factoryAddr: "0xA2ead8857987D26704eFcbbc91eFb2aCDFf90246",
           feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
@@ -166,12 +171,23 @@
         },
         base: {
           name: "Base",
+          chainId: 8453,
           rpcUrl: "https://mainnet.base.org/",
           factoryAddr: "0x4fb4f576eAc4Fc4828F765965E8CE5875ED63809",
           feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
           explorerPrefix: "https://basescan.org/tx/",
           nativeToken: "ETH",
           useEip1559: false,
+        },
+        arc: {
+          name: "Arc",
+          chainId: 5042,
+          rpcUrl: "https://rpc.mainnet.arc.io",
+          factoryAddr: "0x258c4Dde523a3f87f8e4e14c1B3B05Df7b5e6611",
+          feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719",
+          explorerPrefix: "https://explorer.arc.io/tx/",
+          nativeToken: "ETH",
+          useEip1559: true,
         }
       };
 
@@ -305,7 +321,7 @@
                   }
               }
               
-              const gasLimit = await provider.estimateGas(estimateTx);
+              const gasLimit = await estimateGasRobust(provider, estimateTx);
               const gasPrice = await provider.getGasPrice(); 
               
               return { 
@@ -316,6 +332,46 @@
           } catch (error) {
               return { gasLimit: null, gasPrice: null, selectedFeeRecipient: feeRecipientAddress, error };
           }
+      }
+
+      // ===== FIX: estimateGas robust untuk RPC yang flaky (mis. Arc) =====
+      // RPC Arc kadang gagal sesaat ("missing response"/"bad response") dan kadang
+      // menolak estimateGas yang menyertakan field fee. Strategi: retry, coba 2+
+      // tanpa field fee, backoff antar percobaan.
+      const ESTIMATE_RETRIES = 4;
+      function isTransientRpcError(e) {
+        const m = ((e && (e.reason || e.message)) || '').toLowerCase();
+        return m.indexOf('missing response') >= 0
+          || m.indexOf('bad response') >= 0
+          || m.indexOf('timeout') >= 0
+          || m.indexOf('unpredictable_gas_limit') >= 0
+          || m.indexOf('cannot estimate gas') >= 0
+          || m.indexOf('exceeds allowance') >= 0
+          || m.indexOf('could not detect network') >= 0
+          || m.indexOf('econnreset') >= 0
+          || m.indexOf('network error') >= 0;
+      }
+      async function estimateGasRobust(provider, tx) {
+        let lastErr = null;
+        for (let attempt = 1; attempt <= ESTIMATE_RETRIES; attempt++) {
+          const stripFees = attempt > 1;
+          try {
+            const payload = { from: tx.from, to: tx.to, data: tx.data, value: tx.value };
+            if (!stripFees && tx.maxFeePerGas) {
+              payload.maxFeePerGas = tx.maxFeePerGas;
+              payload.maxPriorityFeePerGas = tx.maxPriorityFeePerGas;
+            }
+            const est = await provider.estimateGas(payload);
+            if (attempt > 1) log(`Estimasi gas OK pada percobaan ${attempt} (tanpa field fee).`, "log-info");
+            return est;
+          } catch (e) {
+            lastErr = e;
+            log(`Estimasi gas percobaan ${attempt}/${ESTIMATE_RETRIES} gagal: ${((e.reason || e.message) || '').slice(0, 60)}`, "log-warn");
+            if (!isTransientRpcError(e)) break;
+            await sleep(600 * attempt);
+          }
+        }
+        throw lastErr;
       }
 
       async function estimateGasAndFee() {
@@ -513,9 +569,47 @@
           updateConfig(e.target.value);
       });
 
+      // ===== AUTO LOAD contracts.json =====
+      // contracts.json (di folder yang sama) memuat alamat factory terbaru per
+      // chainId. Kalau ada, alamat factory & RPC di atas otomatis ditimpa.
+      async function loadContractsJson() {
+        try {
+          const res = await fetch("contracts.json", { cache: "no-store" });
+          if (!res.ok) {
+            log(`contracts.json tidak ditemukan (HTTP ${res.status}). Pakai alamat default.`, "log-warn");
+            return;
+          }
+          const data = await res.json();
+          let loaded = 0;
+          for (const key in CONFIG) {
+            const entry = data[String(CONFIG[key].chainId)];
+            if (!entry) continue;
+            if (entry.factory && ethersLib.utils.isAddress(entry.factory)) {
+              CONFIG[key].factoryAddr = entry.factory;
+            }
+            if (entry.rpc && /^https?:\/\//.test(entry.rpc)) {
+              CONFIG[key].rpcUrl = entry.rpc;
+            }
+            loaded++;
+            log(`contracts.json [${CONFIG[key].name}]: factory ${CONFIG[key].factoryAddr}`, "log-success");
+          }
+          // reset provider/wallet karena RPC bisa berubah
+          provider = null;
+          wallet = null;
+          if (loaded > 0) {
+            log(`contracts.json dimuat (${loaded} jaringan). Alamat factory sudah diperbarui.`, "log-success");
+          } else {
+            log("contracts.json dimuat, tapi tidak ada chainId yang cocok.", "log-warn");
+          }
+        } catch (e) {
+          log("Gagal memuat contracts.json: " + (e.message || String(e)), "log-warn");
+        }
+      }
+
       stopBtn.disabled = true;
       clearLog(); 
-      updateConfig(networkSelect.value); 
+      updateConfig(networkSelect.value);
+      loadContractsJson();
     })();
   </script>
 </body>
