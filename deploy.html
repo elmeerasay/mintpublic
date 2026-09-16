@@ -479,7 +479,7 @@
                 const gasOptions = await getGasOptions(provider);
 
                 log(`Simulasi Batch (Dry Run)...`, 'info');
-                const estTx = contract.interface.encodeFunctionData('createAndMintBatch', ...args);
+                const estTx = contract.interface.encodeFunctionData('createAndMintBatch', args);
                 const estGas = await estimateGasRobust(provider, wallet, { to: factoryAddr, data: estTx, value: ethers.BigNumber.from(0) });
                 
                 savedBatchGasLimit = await checkBalanceAndCost(provider, wallet, estGas, gasOptions, ethers.BigNumber.from(0));
