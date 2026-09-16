@@ -74,7 +74,7 @@
     
     <label for="networkSelect">Jaringan</label>
     <select id="networkSelect">
-      <option value="monad">Monad</option>
+      <option value="ARC">ARC</option>
       <option value="ethereum">Ethereum Mainnet</option>
       <option value="apechain">Apechain</option>
       <option value="animechain">Animechain</option>
@@ -128,12 +128,12 @@
       
       const CONFIG = {
         monad: {
-          name: "Monad",
-          rpcUrl: "https://rpc4.monad.xyz",
-          factoryAddr: "0x443323a68F170C3358fA5168bf948a00F0da49c9",
+          name: "ARC",
+          rpcUrl: "https://rpc.mainnet.arc.io",
+          factoryAddr: "0x258c4Dde523a3f87f8e4e14c1B3B05Df7b5e6611",
           feeRecipient: "0x0000a26b00c1F0DF003000390027140000fAa719", 
-          explorerPrefix: "https://monadscan.com/tx/", 
-          nativeToken: "MONAD",
+          explorerPrefix: "https://explorer.arc.io/tx/", 
+          nativeToken: "USD",
           useEip1559: false, 
         },
         ethereum: {
