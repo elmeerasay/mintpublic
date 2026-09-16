@@ -188,6 +188,7 @@
           explorerPrefix: "https://explorer.arc.io/tx/",
           nativeToken: "ETH",
           useEip1559: true,
+          gasMode: "slow",
         }
       };
 
@@ -282,8 +283,46 @@
           }
       }
 
+      // ===== GAS MODE "SLOW" (paling murah) =====
+      // Sumber angka "slow" di explorer.arc.io = baseFee block latest + tip.
+      // (API explorer diblok Cloudflare, jadi kita hitung langsung dari chain — hasilnya sama.)
+      // maxFee diberi buffer 20% agar tetap masuk block walau baseFee naik sedikit.
+      const SLOW_TIP_GWEI = 1;          // tip minimum (priority fee)
+      const SLOW_BUFFER_PCT = 20;       // buffer maxFee di atas (baseFee+tip)
+      async function getSlowFeeData(providerInstance) {
+        let baseFee = null;
+        // Ambil baseFee dari beberapa block terakhir, ambil yang terkecil (paling murah).
+        const latest = await providerInstance.getBlockNumber();
+        for (let i = 0; i < 3; i++) {
+          try {
+            const blk = await providerInstance.getBlock(latest - i);
+            if (blk && blk.baseFeePerGas) {
+              const bf = blk.baseFeePerGas;
+              if (baseFee === null || bf.lt(baseFee)) baseFee = bf;
+            }
+          } catch (_) {}
+        }
+        if (!baseFee) baseFee = await providerInstance.getGasPrice(); // fallback
+        let tip = ethersLib.utils.parseUnits(String(SLOW_TIP_GWEI), "gwei");
+        try {
+          const mpf = await providerInstance.getFeeData();
+          if (mpf && mpf.maxPriorityFeePerGas && mpf.maxPriorityFeePerGas.gt(tip)) tip = mpf.maxPriorityFeePerGas;
+        } catch (_) {}
+        const slow = baseFee.add(tip);
+        const maxFee = slow.mul(100 + SLOW_BUFFER_PCT).div(100);
+        return { maxFeePerGas: maxFee, maxPriorityFeePerGas: tip, baseFee, tip };
+      }
+
       async function buildFeeOverrides(providerInstance, addr) {
         if (currentConfig.useEip1559) {
+          if (currentConfig.gasMode === "slow") {
+            const slow = await getSlowFeeData(providerInstance);
+            return {
+              from: addr,
+              maxFeePerGas: slow.maxFeePerGas,
+              maxPriorityFeePerGas: slow.maxPriorityFeePerGas
+            };
+          }
           const feeData = await providerInstance.getFeeData();
           if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
             return {
@@ -314,7 +353,9 @@
               };
               
               if (currentConfig.useEip1559) {
-                  const feeData = await provider.getFeeData();
+                  const feeData = currentConfig.gasMode === "slow"
+                      ? await getSlowFeeData(provider)
+                      : await provider.getFeeData();
                   if (feeData && feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
                       estimateTx.maxFeePerGas = feeData.maxFeePerGas;
                       estimateTx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
@@ -407,18 +448,32 @@
         if (feeOverrides.maxFeePerGas) {
             perGas = feeOverrides.maxFeePerGas;
             feeType = `EIP-1559 (maxFeePerGas=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei)`;
+            if (currentConfig.gasMode === "slow") {
+                const slow = await getSlowFeeData(context.provider);
+                feeType += ` — MODE SLOW (baseFee ${ethersLib.utils.formatUnits(slow.baseFee, "gwei")} + tip ${ethersLib.utils.formatUnits(slow.tip, "gwei")})`;
+            }
         } else {
             perGas = feeOverrides.gasPrice;
             feeType = `Legacy gasPrice=${ethersLib.utils.formatUnits(perGas, "gwei")} gwei`;
         }
-        
+
         const totalFeeWei = finalGasLimit.mul(perGas);
         const totalFeeEth = ethersLib.utils.formatEther(totalFeeWei);
-        
+
         log(`Gas Limit Dihitung: ${finalGasLimit.toString()} (Buffer ${GAS_BUFFER_PERCENT}%)`, "log-info");
         log(`Menggunakan ${feeType}`, "log-info");
         log(`PERKIRAAN TOTAL ${currentConfig.nativeToken} YANG DIBUTUHKAN (MAX)`, "log-info");
         log(`${totalFeeEth} ${currentConfig.nativeToken} `, "log-success");
+        if (feeOverrides.maxFeePerGas) {
+            // Yang benar-benar terpotong = baseFee * gasLimit (selisih maxFee dikembalikan).
+            let baseNow = perGas;
+            try {
+                const s2 = await getSlowFeeData(context.provider);
+                baseNow = s2.baseFee;
+            } catch (_) {}
+            const actualFee = ethersLib.utils.formatEther(finalGasLimit.mul(baseNow));
+            log(`Perkiraan BIAYA AKTUAL (baseFee): ${actualFee} ${currentConfig.nativeToken}`, "log-warn");
+        }
 
         getEstimationBtn.disabled = false;
       }
