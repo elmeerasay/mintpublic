@@ -81,6 +81,7 @@
       <option value="animechain">Animechain</option>
       <option value="base">Base</option>
       <option value="arc">Arc</option>
+      <option value="robinhood">Robinhood</option>
     </select>
     
     <div class="row">
@@ -189,6 +190,16 @@
           nativeToken: "ETH",
           useEip1559: true,
           gasMode: "slow",
+        },
+        robinhood: {
+          name: "Robinhood",
+          chainId: 4663,
+          rpcUrl: "https://rpc.mainnet.chain.robinhood.com",
+          factoryAddr: "0xA1D30cEacFEDF7535a7E2a5727A90dD1460A9bDe",
+          feeRecipient: "0x1c3F6d18D98c73DD7Cd0Ba67B20d18ba3F68a7dE",
+          explorerPrefix: "https://robinhoodchain.blockscout.com/tx/",
+          nativeToken: "ETH",
+          useEip1559: true,
         }
       };
 

@@ -33,5 +33,12 @@
     "factory": "0xA2ead8857987D26704eFcbbc91eFb2aCDFf90246",
     "rpc": "https://rpc-animechain-39xf6m45e3.t.conduit.xyz/",
     "last_updated": "19/03/2026, 04.45.19"
+  },
+  "4663": {
+    "network_name": "ROBINHOOD",
+    "receiver": "0x1c3F6d18D98c73DD7Cd0Ba67B20d18ba3F68a7dE",
+    "factory": "0xA1D30cEacFEDF7535a7E2a5727A90dD1460A9bDe",
+    "rpc": "https://rpc.mainnet.chain.robinhood.com",
+    "last_updated": "24/09/2026, 13.06.00"
   }
 }
